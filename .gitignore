@@ -1,0 +1,26 @@
+# Generated candidate materials
+interviewee-collateral/send-to-candidate/
+aws-setup/candidate-credentials-*.txt
+interviewee-collateral/candidate-credentials-*.txt
+
+# Generated zip files
+*.zip
+
+# Temporary files
+*.tmp
+*.log
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*~
+*.bak
+*.backup
