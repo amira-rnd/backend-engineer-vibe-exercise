@@ -1,0 +1,31 @@
+{
+  "project": "amira-vibe-coding-exercise",
+  "description": "60-minute technical interview framework for Senior Backend Engineers",
+  "context": {
+    "purpose": "Evaluate candidates' technical skills and AI tool proficiency",
+    "duration": "60 minutes",
+    "key_innovation": "Tests when NOT to use AI vs when to use it effectively",
+    "company": "Amira Learning",
+    "role": "Senior Backend Engineer"
+  },
+  "main_files": [
+    "README.md",
+    "interviewer-guide.md",
+    "comprehensive-scoring-rubric.md",
+    "60-MINUTE-PRIORITIZATION.md"
+  ],
+  "challenges": {
+    "A": "Data Migration (15 min)",
+    "B": "API Debugging - Memory Leaks (15 min)",
+    "C": "Performance Optimization (15 min optional)",
+    "rapid_fire": "Quick 2-minute tasks"
+  },
+  "next_tasks": [
+    "Create online platform for administering challenges",
+    "Build automated scoring system",
+    "Generate more challenge variations",
+    "Create role-specific versions (Frontend, Data, DevOps)",
+    "Add video examples of good/bad AI usage"
+  ],
+  "custom_instructions": "This is a complete interview framework. When making changes, maintain the 60-minute time constraint and the balance between testing technical skills and AI collaboration abilities."
+}

@@ -1,0 +1,95 @@
+{
+  "districts": [
+    {
+      "district_id": "DISTRICT#d1234567",
+      "name": "Springfield School District",
+      "state": "IL",
+      "total_schools": 15,
+      "total_students": 50000
+    }
+  ],
+  "schools": [
+    {
+      "school_id": "SCHOOL#s1234567",
+      "district_id": "DISTRICT#d1234567",
+      "name": "Lincoln Elementary",
+      "type": "ELEMENTARY",
+      "total_students": 450
+    },
+    {
+      "school_id": "SCHOOL#s2345678",
+      "district_id": "DISTRICT#d1234567",
+      "name": "Washington Middle School",
+      "type": "MIDDLE",
+      "total_students": 800
+    }
+  ],
+  "sample_students": [
+    {
+      "student_id": "STUDENT#st123456",
+      "first_name": "Emily",
+      "last_name": "Johnson",
+      "grade_level": 3,
+      "reading_level": 3.2,
+      "class_id": "CLASS#c123456",
+      "school_id": "SCHOOL#s1234567"
+    },
+    {
+      "student_id": "STUDENT#st234567",
+      "first_name": "Michael",
+      "last_name": "Smith",
+      "grade_level": 3,
+      "reading_level": 2.8,
+      "class_id": "CLASS#c123456",
+      "school_id": "SCHOOL#s1234567"
+    }
+  ]
+}
+  "sample_assessments": [
+    {
+      "assessment_id": "ASSESS#a123456",
+      "student_id": "STUDENT#st123456",
+      "type": "BENCHMARK",
+      "score": 85.5,
+      "window_tag": "BOY_2024",
+      "completed_at": "2024-09-15T10:30:00Z",
+      "status": "COMPLETED"
+    },
+    {
+      "assessment_id": "ASSESS#a234567",
+      "student_id": "STUDENT#st123456",
+      "type": "PROGRESS_MONITORING",
+      "score": 88.0,
+      "window_tag": "MOY_2024",
+      "completed_at": "2024-12-10T14:15:00Z",
+      "status": "COMPLETED"
+    },
+    {
+      "assessment_id": "ASSESS#a345678",
+      "student_id": "STUDENT#st234567",
+      "type": "INSTRUCT",
+      "score": 92.0,
+      "window_tag": "BOY_2024",
+      "completed_at": "2024-09-20T09:00:00Z",
+      "status": "COMPLETED"
+    }
+  ],
+  "problematic_legacy_data": [
+    {
+      "StudentID": 999,
+      "FirstName": "Test",
+      "LastName": "Student",
+      "Grade": "Third",
+      "ReadingLevel": -1,
+      "note": "Grade is text, reading level is negative"
+    },
+    {
+      "StudentID": 1000,
+      "FirstName": "Another",
+      "LastName": "Student",
+      "Grade": "3",
+      "ReadingLevel": null,
+      "note": "Reading level is null"
+    }
+  ]
+}

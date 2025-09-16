@@ -1,0 +1,52 @@
+# Amira Learning GraphQL Schema (AppSync)
+
+type Query {
+  getStudent(studentId: ID!): Student
+  getAssessments(
+    studentId: ID!
+    type: AssessmentType
+    dateRange: DateRangeInput
+  ): [Assessment]
+}
+
+type Student {
+  studentId: ID!
+  firstName: String!
+  lastName: String!
+  gradeLevel: Int!
+  readingLevel: Float
+  assessments: [Assessment]
+  status: StudentStatus!
+}
+
+type Assessment {
+  assessmentId: ID!
+  studentId: ID!
+  type: AssessmentType!
+  score: Float!
+  windowTag: String
+  status: AssessmentStatus!
+  completedAt: String
+}
+
+enum AssessmentType {
+  BENCHMARK
+  PROGRESS_MONITORING
+  INSTRUCT
+}
+
+enum AssessmentStatus {
+  COMPLETED
+  PROCESSING
+  ERROR
+}
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+}
+
+input DateRangeInput {
+  startDate: String!
+  endDate: String!
+}
