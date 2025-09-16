@@ -16,8 +16,10 @@ Evaluate the candidate's ability to:
 
 ### 📋 Pre-Session Checklist
 
-- [ ] AWS sandbox environment ready (credentials in secure doc)
-- [ ] Candidate received prep materials 24 hours ago
+- [ ] Run `make deploy CANDIDATE=their-name` to create AWS environment
+- [ ] Run `make verify CANDIDATE=their-name` to test all resources
+- [ ] Run `make credentials CANDIDATE=their-name` to generate materials
+- [ ] Candidate received prep materials 24 hours ago (via `make prep-email`)
 - [ ] **Choose 2 main challenges based on candidate background**
 - [ ] Screen recording software ready (with consent)
 - [ ] **CRITICAL: Review comprehensive-scoring-rubric.md for AI usage evaluation**

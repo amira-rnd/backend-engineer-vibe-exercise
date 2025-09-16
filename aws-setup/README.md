@@ -10,6 +10,17 @@ This directory contains CloudFormation templates and scripts to create isolated,
 
 ## Quick Start
 
+**⚠️ RECOMMENDED: Use the Makefile workflow from project root instead of running these scripts directly.**
+
+```bash
+# Complete automated workflow (from project root)
+make deploy CANDIDATE=john-doe           # Deploy infrastructure
+make credentials CANDIDATE=john-doe      # Generate email + challenges
+make cleanup CANDIDATE=john-doe         # Remove all resources
+```
+
+### Manual Script Usage (if needed)
+
 ### 1. Deploy Interview Environment
 ```bash
 cd aws-setup
