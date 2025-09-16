@@ -24,6 +24,38 @@ Evaluate the candidate's ability to:
 - [ ] Scoring rubric printed/open
 - [ ] Slack #interview-support monitored
 - [ ] **Set timers for each section**
+- [ ] **Verify infrastructure readiness (see Data Verification Checklist below)**
+
+### 📋 Data Verification Checklist
+
+**Before starting the interview, verify:**
+
+- [ ] **CloudFormation Stack**: Status is CREATE_COMPLETE
+- [ ] **PostgreSQL Data**: Tables created and populated with sample data
+  ```bash
+  psql -h [DB_ENDPOINT] -U postgres -d postgres -c "SELECT COUNT(*) FROM students;"
+  # Should return > 0 rows
+  ```
+- [ ] **DynamoDB Data**: Sample students exist
+  ```bash
+  aws dynamodb scan --table-name [STUDENTS_TABLE] --limit 1
+  # Should return student records
+  ```
+- [ ] **Sample Data API**: Accessible and serving files
+  ```bash
+  curl "[SAMPLE_DATA_URL]"
+  # Should return JSON with available files
+  ```
+- [ ] **Lambda Function**: Deployed and accessible
+  ```bash
+  aws lambda get-function --function-name [LAMBDA_NAME]
+  # Should return function details
+  ```
+
+**If any checks fail:**
+- Re-run deploy script: `./deploy-interview.sh [candidate-name] [interview-id]`
+- Check AWS console for CloudFormation stack errors
+- Verify credentials generation script passes all validations
 
 ### ⏱️ Detailed Session Flow - 60 MINUTES
 
@@ -57,7 +89,7 @@ Keep this SHORT - you can observe more during challenges.
 ```
 "You have 15 minutes to migrate student assessment data from our legacy system to DynamoDB.
 The legacy system has data quality issues. Focus on handling the most critical issues first.
-You'll find schemas and sample data in the sample-data folder."
+You can access schemas and sample data via the API provided in your credentials email - look for the 'Sample Data & Schema API' section."
 ```
 
 **Time Management:**
