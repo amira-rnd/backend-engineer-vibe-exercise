@@ -1,6 +1,6 @@
 # Challenge C: Assignment Conflict Resolution Performance
 ## ⚡ OPTIONAL - Only if candidate is moving very quickly
-## Time: 15 minutes (60-minute format) | 25 minutes (90-minute format)
+## Time: 15 minutes
 
 ### Background
 

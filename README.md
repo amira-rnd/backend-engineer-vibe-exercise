@@ -100,23 +100,35 @@ backend-engineer-vibe-exercise/
 
 ## 🎯 Challenge Overview
 
-### **⭐ Challenge A: Legacy Data Migration (PRIORITY - 15 min)**
+### **⭐ Main Challenges (Choose 2 of 3)**
+
+### **Challenge A: Legacy Data Migration (15 min)**
 Transform legacy SQL data to DynamoDB, handling data quality issues.
 - **Skills**: Data transformation, error handling, batch processing
 - **AWS**: DynamoDB, PostgreSQL with intentional data problems
 
-### **⭐ Challenge B: Memory Leak Debugging (PRIORITY - 15 min)**
+### **Challenge B: Memory Leak Debugging (15 min)**
 **Choose based on candidate background:**
 - **Option 1**: C++/.NET Lambda memory leak (advanced)
 - **Option 2**: Node.js service memory leak (standard)
 - **Skills**: Debugging methodology, resource management, performance analysis
 - **AWS**: Lambda function with subtle memory leaks, CloudWatch logs
 
-### **⚡ Challenge C: Performance Optimization (OPTIONAL - 15 min)**
-**Only if candidate is moving quickly through A & B**
+### **Challenge C: Performance Optimization (15 min)**
+**For very senior candidates or fast movers**
 - Optimize slow database queries and application logic
 - **Skills**: Query optimization, caching strategies, algorithmic thinking
 - **AWS**: PostgreSQL, Redis cache, complex data hierarchies
+
+### **⚡ Rapid Fire Tasks (5-10 min total)**
+**5 quick tasks testing adaptability and context switching:**
+1. **Rate Limiting** (2 min) - Add Lambda rate limiting
+2. **BatchGetItem Bug** (3 min) - Fix missing items issue
+3. **Recursive CTE** (3 min) - Convert SQL to application code
+4. **Monitoring** (2 min) - Add CloudWatch metrics
+5. **Memory Leak** (3 min) - Fix unbounded cache growth
+
+**Focus**: Speed, pattern recognition, efficient AI usage under pressure
 
 ---
 
@@ -124,14 +136,15 @@ Transform legacy SQL data to DynamoDB, handling data quality issues.
 
 ### **🎯 60-Minute Prioritization:**
 - **MUST DO**: Setup (5) + Challenge A (15) + Challenge B (15) + Discussion (10) + Wrap-up (5) = 50 min
-- **IF TIME**: Challenge C (15 min) or extended discussion
+- **IF TIME**: Challenge C (15 min) or Rapid Fire Tasks (5-10 min)
 
 ### **📊 What to Observe:**
 1. **AI Interaction Style**: Do they prompt effectively or just copy/paste?
 2. **Problem Approach**: Do they analyze first or jump straight to coding?
 3. **Error Handling**: How do they debug when things don't work?
 4. **Code Review**: Can they spot issues in their own or provided code?
-5. **Time Management**: Do they focus on high-impact changes?
+5. **Context Switching**: How do they adapt to rapid fire tasks?
+6. **Time Management**: Do they focus on high-impact changes?
 
 ### **🚨 Red Flags:**
 - Asking AI to solve the entire problem without understanding
@@ -144,6 +157,8 @@ Transform legacy SQL data to DynamoDB, handling data quality issues.
 - Iterating and improving solutions based on results
 - Asking clarifying questions about requirements
 - Demonstrating systematic debugging approach
+- Quick adaptation during rapid fire challenges
+- Efficient context switching between different problem types
 
 ---
 
@@ -189,6 +204,7 @@ A successful interview demonstrates:
 - **Strategic AI usage** that amplifies rather than replaces engineering skills
 - **Systematic problem-solving** approach to debugging and optimization
 - **Production mindset** with proper error handling and edge case consideration
+- **Startup agility** through rapid context switching and efficient task completion
 - **Clear communication** about technical decisions and trade-offs
 
 ---

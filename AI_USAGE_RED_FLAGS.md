@@ -3,7 +3,14 @@
 
 ### 🔴 Instant Red Flags
 
-If candidate uses AI for these, mark as concerning:
+#### **AI-Only Dependency (Major Concern)**
+- ❌ Only uses AI findings without further analysis
+- ❌ Cannot identify issues beyond what AI suggests
+- ❌ Accepts AI output without validation or understanding
+- ❌ Stops investigation after AI provides initial results
+
+#### **Critical Decision AI-Dependence**
+If candidate uses AI for these strategic decisions, mark as concerning:
 
 1. **Root Cause Analysis**
    - ❌ "AI, why is this code failing?"
@@ -22,17 +29,23 @@ If candidate uses AI for these, mark as concerning:
 
 ### 🟢 Good AI Usage
 
-These show maturity:
+These show maturity and strategic thinking:
 
-1. **After Understanding**
+#### **AI-First (Efficient & Acceptable)**
+   - ✅ "AI, scan this code for memory leaks... okay, found several, let me analyze each one"
+   - ✅ "Let me use AI to get initial patterns, then validate manually"
+   - ✅ "AI gave me these findings, but I see it missed the connection lifecycle issue"
+
+#### **AI as Implementation Tool**
    - ✅ "I need to implement connection pooling, here's my approach..."
    - ✅ "Help me with the syntax for window functions"
    - ✅ "Generate the retry logic with exponential backoff"
 
-2. **Validation Focus**
-   - ✅ Tests AI code before using
-   - ✅ Rewrites parts that don't fit
-   - ✅ Questions suspicious output
+#### **AI Validation & Iteration**
+   - ✅ Tests AI code before using it
+   - ✅ Rewrites parts that don't fit requirements
+   - ✅ Questions suspicious or incomplete output
+   - ✅ Identifies what AI missed through manual analysis
 
 ### 📝 Quick Evaluation per Challenge
 
@@ -41,8 +54,13 @@ These show maturity:
 - Watch: Do they determine invalid data handling?
 
 **Challenge B (Debugging):**
-- Watch: Do they identify memory leak cause or ask AI?
-- Watch: Do they understand SIGSEGV or Google it via AI?
+- Watch: Do they understand architecture before using AI tools?
+- Watch: Do they systematically trace through all 6 modules (not just AI findings)?
+- Watch: Do they identify memory leak sources beyond what AI suggests?
+- Watch: Do they distinguish real leaks from performance red herrings?
+- **Red Flag**: Only rely on AI to find memory leaks without validation
+- **Green Flag**: Use AI for initial discovery, then analyze further
+- Watch: Do they explain WHY issues cause memory leaks (not just copy fixes)?
 
 **Challenge C (Optimization):**
 - Watch: Do they analyze performance issue first?

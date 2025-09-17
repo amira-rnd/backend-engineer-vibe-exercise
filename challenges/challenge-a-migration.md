@@ -1,6 +1,6 @@
 # Challenge A: Legacy Data Migration
 ## ⭐ PRIORITY CHALLENGE
-## Time: 15 minutes (60-minute format) | 20 minutes (90-minute format)
+## Time: 15 minutes
 
 ### Background
 
@@ -108,7 +108,7 @@ CREATE TABLE Assessments (
 }
 ```
 
-### Evaluation Criteria (15-minute version)
+### Evaluation Criteria
 
 **Excellent (5/5):**
 - Handles critical data quality issues (grade, reading level)
@@ -131,9 +131,9 @@ CREATE TABLE Assessments (
 - No batch processing
 - Major bugs
 
-### Hints (provide earlier in 60-min format)
+### Hints
 
-After 5 minutes (not 10):
+After 5 minutes:
 - "Focus on grade normalization first"
 - "Don't worry about perfect retry logic"
 - "BatchWriteItem has a 25 item limit"

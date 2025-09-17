@@ -1,6 +1,6 @@
 # Challenge B Alternative: Node.js Service Memory Leak
 ## ⭐ PRIORITY CHALLENGE
-## Time: 15 minutes (60-minute format) | 20 minutes (90-minute format)
+## Time: 15 minutes
 ## (Use this if candidate lacks C++/.NET experience)
 
 ### Background

@@ -195,7 +195,7 @@
 - Trade-off analysis: /5
 - **Total: /20**
 
-### Rapid Fire (10 min)
+### Rapid Fire (5-10 min)
 - Completion rate: /5
 - Solution quality: /5
 - Speed: /5

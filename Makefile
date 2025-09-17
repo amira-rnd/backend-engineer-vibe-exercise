@@ -24,10 +24,10 @@ help: ## 📖 Show this help message
 	@echo "  └── make verify         - Test all resources & populate sample data with bugs"
 	@echo ""
 	@echo "  3️⃣  GENERATE MATERIALS (Send to candidate)"
-	@echo "  └── make credentials    - 📧 Generate email + 📦 zip challenges into send-to-candidate/"
+	@echo "  └── make credentials    - 🧹 Clean + 📧 generate email + 📦 zip challenges"
 	@echo ""
-	@echo "  4️⃣  INTERVIEW SESSION (Optional testing)"
-	@echo "  └── make test-candidate - Test candidate's AWS access works before interview"
+	@echo "  4️⃣  INTERVIEW SESSION"
+	@echo "  └── (No additional steps needed - credentials validation is automatic)"
 	@echo ""
 	@echo "  5️⃣  CLEANUP (After interview)"
 	@echo "  ├── make clean          - 🧹 Remove local generated files (send-to-candidate/)"
@@ -36,8 +36,7 @@ help: ## 📖 Show this help message
 	@echo "💡 EXAMPLES:"
 	@echo "  make prep-email                              # Show prep file location"
 	@echo "  make deploy CANDIDATE=john-doe"
-	@echo "  make credentials CANDIDATE=john-doe"
-	@echo "  make clean                                   # Remove generated files"
+	@echo "  make credentials CANDIDATE=john-doe          # Auto-cleans first"
 	@echo "  make cleanup CANDIDATE=john-doe"
 	@echo ""
 	@echo "📋 VARIABLES:"
@@ -91,9 +90,18 @@ status: ## 📊 Check current AWS account and region
 	@echo "Active Interview Stacks:"
 	@cd aws-setup && aws cloudformation list-stacks \
 		--profile $(AWS_PROFILE) \
+		--region us-east-1 \
 		--stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
-		--query 'StackSummaries[?contains(StackName, `amira-interview`)].{Name:StackName,Status:StackStatus,Created:CreationTime}' \
-		--output table || echo "No active stacks found"
+		--query "StackSummaries[?contains(StackName, 'amira-interview')].{Name:StackName,Status:StackStatus,Created:CreationTime}" \
+		--output table || echo "No interview stacks found."
+	@echo ""
+	@echo "📋 Variables to use for existing stacks:"
+	@cd aws-setup && aws cloudformation list-stacks \
+		--profile $(AWS_PROFILE) \
+		--region us-east-1 \
+		--stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+		--query "StackSummaries[?contains(StackName, 'amira-interview')].StackName" \
+		--output text | sed 's/amira-interview-//g' | sed 's/\([^-]*\)-\(.*\)/CANDIDATE=\1 INTERVIEW_ID=\2/' || echo "💡 To deploy a new environment: make deploy CANDIDATE=test-candidate"
 
 # =============================================================================
 # 2️⃣ DEPLOY ENVIRONMENT (Creates AWS infrastructure for one interview)
@@ -105,6 +113,8 @@ deploy: ## 🚀 Create complete AWS environment with buggy code & sample data
 	@echo "🚀 Deploying interview environment for: $(CANDIDATE)"
 	@echo "Interview ID: $(INTERVIEW_ID)"
 	@cd aws-setup && echo "1" | ./deploy-interview.sh $(CANDIDATE) $(INTERVIEW_ID)
+	@echo "📁 Uploading challenge files to S3..."
+	@cd aws-setup && ./sync-challenges.sh $(CANDIDATE)-$(INTERVIEW_ID)
 	@echo "✅ Environment deployed successfully!"
 	@echo ""
 	@echo "📋 Next steps:"
@@ -116,12 +126,17 @@ verify: ## 🔍 Test all AWS resources & ensure sample data has intentional bugs
 	@echo "🔍 Verifying interview environment..."
 	@cd aws-setup && ./verify-interview-environment.sh $(CANDIDATE) $(INTERVIEW_ID)
 
+populate-data: ## 🔄 Re-populate database and DynamoDB data (if seeding failed)
+	@$(call check_candidate)
+	@echo "🔄 Re-populating interview data..."
+	@cd aws-setup && ./populate-data.sh $(CANDIDATE) $(INTERVIEW_ID)
+
 # =============================================================================
 # 3️⃣ GENERATE MATERIALS (Create everything needed to send to candidate)
 # credentials: Creates email with temp AWS credentials + zips /challenges directory
 # =============================================================================
 
-credentials: ## 📧 Generate email + 📦 zip challenges into send-to-candidate/
+credentials: clean ## 📧 Generate email + 📦 zip challenges into send-to-candidate/
 	@$(call check_candidate)
 	@echo "🔐 Generating complete package for: $(CANDIDATE)"
 	@cd interviewee-collateral && ./generate-credentials-email.sh $(CANDIDATE) $(INTERVIEW_ID)
@@ -129,25 +144,6 @@ credentials: ## 📧 Generate email + 📦 zip challenges into send-to-candidate
 	@echo "✅ Complete package ready in: interviewee-collateral/send-to-candidate/"
 	@echo ""
 	@echo "📧 Send both files to candidate 30 minutes before interview"
-
-# =============================================================================
-# 4️⃣ INTERVIEW SESSION (Optional - test candidate access before interview)
-# =============================================================================
-
-test-candidate: ## 🧪 Verify candidate can access DynamoDB & Lambda (optional)
-	@$(call check_candidate)
-	@echo "🧪 Testing candidate access..."
-	@echo "This will run basic connectivity tests using candidate credentials"
-	@echo "⚠️  Make sure you have generated credentials first!"
-	@echo ""
-	@read -p "Continue? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1
-	@echo "Testing DynamoDB access..."
-	@cd aws-setup && aws dynamodb scan --table-name $(INTERVIEW_ID)-students --limit 1 --profile $(AWS_PROFILE) > /dev/null
-	@echo "✅ DynamoDB access working"
-	@echo "Testing Lambda access..."
-	@cd aws-setup && aws lambda get-function --function-name $(INTERVIEW_ID)-buggy-api --profile $(AWS_PROFILE) > /dev/null
-	@echo "✅ Lambda access working"
-	@echo "🎉 Candidate environment is ready!"
 
 # =============================================================================
 # 5️⃣ CLEANUP (Delete all AWS resources to stop billing after interview)
@@ -166,12 +162,14 @@ cleanup: ## 🗑️ DELETE all AWS resources (CloudFormation stack, DynamoDB, RD
 	fi
 	@if [ -n "$(CANDIDATE)" ]; then \
 		STACK_NAME="amira-interview-$(CANDIDATE)-$(INTERVIEW_ID)"; \
+		echo "Stack to delete: $$STACK_NAME"; \
+		read -p "Continue? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1; \
+		cd aws-setup && ./cleanup-interview.sh $(CANDIDATE) $(INTERVIEW_ID); \
 	else \
-		STACK_NAME="$(INTERVIEW_ID)"; \
-	fi; \
-	echo "Stack to delete: $$STACK_NAME"; \
-	read -p "Continue? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1; \
-	cd aws-setup && ./cleanup-interview.sh $$STACK_NAME
+		echo "Stack to delete: $(INTERVIEW_ID)"; \
+		read -p "Continue? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1; \
+		cd aws-setup && ./cleanup-interview.sh $(INTERVIEW_ID); \
+	fi
 	@echo "✅ Cleanup complete!"
 
 clean: ## 🧹 Remove local generated files (send-to-candidate directory)

@@ -128,31 +128,42 @@
 ### Challenge B: Memory Leak Debugging (15 min)
 
 #### Original Version (C++/.NET Interop)
-**What They Should NOT Use AI For:**
-- Identifying the root cause (connection array growth)
-- Understanding SIGSEGV meaning in this context
-- Recognizing singleton pattern issues
-- Deciding on disposal strategy
+**What They Should NOT Use AI For (Root Cause Analysis):**
+- Relying solely on AI for systematic analysis across 6 modules
+- Using only AI to identify memory leak sources (should find 10+ total)
+- Letting AI explain SIGSEGV in Edge.js/.NET context without manual investigation
+- Having AI decide architectural solutions (cache eviction strategies)
+
+**What's Acceptable (AI-First with Manual Validation):**
+- Using AI to scan for memory leak patterns, then systematically validating findings
+- Getting initial AI suggestions, then analyzing each module manually
+- Identifying additional leak sources beyond what AI suggested
 
 #### Alternative Version (Node.js/Python/Java)
-**What They Should NOT Use AI For:**
-- Identifying memory leak sources (cache, listeners, connections)
-- Understanding heap exhaustion patterns
-- Recognizing event emitter accumulation
-- Deciding on cache eviction strategy
-- Understanding circular reference issues
+**What They Should NOT Use AI For (Root Cause Analysis):**
+- Relying solely on AI to identify all memory leak sources
+- Using only AI to understand heap exhaustion patterns
+- Having AI decide cache eviction strategy without analysis
+
+**What's Acceptable (AI-First with Manual Validation):**
+- Using AI to scan for common patterns, then manually verifying each
+- Getting AI suggestions for leak types, then systematically investigating
+- Identifying issues AI missed through manual code review
 
 #### Acceptable AI Usage (Both Versions):
-- Connection pool implementation
-- Cleanup patterns
-- Error handling code
+- Connection cleanup implementation patterns
+- Cache eviction algorithm syntax
+- Event listener removal code
+- Error handling boilerplate
 - AWS SDK syntax
-- Cache eviction algorithms
+- Specific .NET disposal patterns (after identifying the need)
 
-#### Scoring Guide:
-- **5 pts:** Debugs independently, uses AI for fix implementation
-- **3 pts:** Uses AI to help identify issues
-- **1 pt:** Relies on AI to find and fix problem
+#### Scoring Guide (Updated for Enhanced Complexity):
+- **5 pts:** Systematic multi-module analysis, finds 6+ leaks, strategic AI usage (AI-first then validation)
+- **4 pts:** Traces through most modules, finds 4-5 leaks, good AI-first approach with analysis
+- **3 pts:** Identifies some key issues, uses AI for discovery but validates findings
+- **2 pts:** Basic issue recognition, relies heavily on AI but shows some independent thinking
+- **1 pt:** Cannot function without AI, only uses AI findings without validation or understanding
 
 ### Challenge C: Performance Optimization (25 min)
 

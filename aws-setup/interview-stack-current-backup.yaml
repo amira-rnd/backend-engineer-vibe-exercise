@@ -10,13 +10,6 @@ Parameters:
     Type: String
     Description: Candidate name for resource naming
     Default: candidate
-  DeploymentBucketName:
-    Type: String
-    Description: Name of the S3 bucket containing Lambda deployment packages
-    Default: ""
-
-Conditions:
-  CreateDeploymentBucket: !Equals [!Ref DeploymentBucketName, ""]
 
 Resources:
   # Challenge Files Storage
@@ -35,10 +28,9 @@ Resources:
         - Key: InterviewId
           Value: !Ref InterviewId
 
-  # Deployment bucket for Lambda code (only created if no external bucket provided)
+  # Deployment bucket for Lambda code
   DeploymentBucket:
     Type: AWS::S3::Bucket
-    Condition: CreateDeploymentBucket
     Properties:
       BucketName: !Sub '${InterviewId}-deployment'
       PublicAccessBlockConfiguration:
@@ -171,7 +163,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - s3:GetObject
-                Resource: !Sub '${ChallengeFilesBucket.Arn}/*'
+                Resource: !Sub '${ChallengeFilesBucket}/*'
 
   BuggyLambdaFunction:
     Type: AWS::Lambda::Function
@@ -263,7 +255,7 @@ Resources:
         Variables:
           CHALLENGE_BUCKET: !Ref ChallengeFilesBucket
       Code:
-        S3Bucket: !If [CreateDeploymentBucket, !Ref DeploymentBucket, !Ref DeploymentBucketName]
+        S3Bucket: !Ref DeploymentBucket
         S3Key: !Sub '${InterviewId}/sample-data-api.zip'
       MemorySize: 128
       Timeout: 30

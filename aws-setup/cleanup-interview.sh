@@ -74,6 +74,42 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     exit 0
 fi
 
+# Proactively fix common VPC issues before deletion
+echo -e "${BLUE}Checking for VPC resources that commonly cause deletion issues...${NC}"
+
+VPC_ID=$(aws ec2 describe-vpcs \
+    --profile personal \
+    --region "$REGION" \
+    --filters "Name=tag:aws:cloudformation:stack-name,Values=$STACK_NAME" \
+    --query 'Vpcs[0].VpcId' \
+    --output text 2>/dev/null || echo "")
+
+if [ "$VPC_ID" != "" ] && [ "$VPC_ID" != "None" ]; then
+    echo "Found stack VPC: $VPC_ID"
+
+    # Proactively detach Internet Gateway to prevent common deletion failures
+    IGW_ID=$(aws ec2 describe-internet-gateways \
+        --profile personal \
+        --region "$REGION" \
+        --filters "Name=attachment.vpc-id,Values=$VPC_ID" \
+        --query 'InternetGateways[0].InternetGatewayId' \
+        --output text 2>/dev/null || echo "")
+
+    if [ "$IGW_ID" != "" ] && [ "$IGW_ID" != "None" ]; then
+        echo "Proactively detaching Internet Gateway: $IGW_ID"
+        aws ec2 detach-internet-gateway \
+            --internet-gateway-id "$IGW_ID" \
+            --vpc-id "$VPC_ID" \
+            --profile personal \
+            --region "$REGION" 2>/dev/null || echo "Gateway already detached"
+        echo "✅ VPC cleanup completed"
+    else
+        echo "No Internet Gateway found to detach"
+    fi
+else
+    echo "No VPC found for this stack"
+fi
+
 # Delete CloudFormation stack
 echo -e "${BLUE}Deleting CloudFormation stack...${NC}"
 aws cloudformation delete-stack \
@@ -90,9 +126,9 @@ fi
 
 # Wait for deletion to complete
 echo -e "${BLUE}Waiting for stack deletion to complete...${NC}"
-echo "This may take several minutes..."
+echo "This may take 10-20 minutes due to RDS and ElastiCache resources..."
 
-aws cloudformation wait stack-delete-complete \
+timeout 1200 aws cloudformation wait stack-delete-complete \
     --stack-name "$STACK_NAME" \
     --profile personal \
     --region "$REGION"
@@ -101,10 +137,10 @@ WAIT_EXIT_CODE=$?
 
 if [ $WAIT_EXIT_CODE -eq 0 ]; then
     echo -e "${GREEN}✅ Stack deleted successfully${NC}"
-elif [ $WAIT_EXIT_CODE -eq 255 ]; then
-    echo -e "${RED}❌ Stack deletion failed or timed out${NC}"
-    echo "Check AWS Console for details"
-    exit 1
+elif [ $WAIT_EXIT_CODE -eq 124 ]; then
+    echo -e "${YELLOW}⚠️  Stack deletion timed out after 20 minutes${NC}"
+    echo "This is unusual - check AWS Console for status"
+    echo "Stack may still be deleting in background"
 else
     echo -e "${YELLOW}⚠️  Stack deletion status unknown${NC}"
     echo "Check AWS Console to verify deletion"

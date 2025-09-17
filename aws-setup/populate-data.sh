@@ -1,6 +1,6 @@
 #!/bin/bash
-# Deploy Interview Environment Script
-# Usage: ./deploy-interview.sh <candidate-name> [interview-id]
+# Standalone Data Population Script
+# Usage: ./populate-data.sh <candidate-name> [interview-id]
 
 set -e
 
@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 if [ $# -lt 1 ]; then
     echo -e "${RED}Usage: $0 <candidate-name> [interview-id]${NC}"
     echo "Example: $0 john-doe"
-    echo "Example: $0 jane-smith interview-20241216-1400"
+    echo "Example: $0 jane-smith 20241216-1400"
     exit 1
 fi
 
@@ -23,101 +23,18 @@ INTERVIEW_ID=${2:-"$(date +%Y%m%d-%H%M)"}
 STACK_NAME="amira-interview-${CANDIDATE_NAME}-${INTERVIEW_ID}"
 REGION=${AWS_DEFAULT_REGION:-us-east-1}
 
-echo -e "${BLUE}🚀 Deploying Amira Interview Environment${NC}"
+echo -e "${BLUE}🔄 Re-populating Data for Interview Environment${NC}"
 echo "Candidate: $CANDIDATE_NAME"
 echo "Interview ID: $INTERVIEW_ID"
 echo "Stack Name: $STACK_NAME"
 echo "Region: $REGION"
 echo ""
 
-# Validate AWS credentials
-echo -e "${BLUE}Validating AWS credentials...${NC}"
-aws sts get-caller-identity --profile personal > /dev/null
-if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ AWS credentials not configured properly${NC}"
-    exit 1
-fi
-echo -e "${GREEN}✅ AWS credentials validated${NC}"
-
-# Check if stack already exists
-echo -e "${BLUE}Checking for existing stack...${NC}"
-if aws cloudformation describe-stacks --stack-name "$STACK_NAME" --profile personal --region "$REGION" >/dev/null 2>&1; then
-    STACK_STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --profile personal --region "$REGION" --query 'Stacks[0].StackStatus' --output text)
-    if [ "$STACK_STATUS" = "CREATE_COMPLETE" ] || [ "$STACK_STATUS" = "UPDATE_COMPLETE" ]; then
-        echo -e "${YELLOW}⚠️  Stack $STACK_NAME already exists (status: $STACK_STATUS)${NC}"
-        echo "Would you like to:"
-        echo "1. Populate data in existing stack (recommended)"
-        echo "2. Update stack with latest template"
-        echo "3. Exit and use cleanup-interview.sh first"
-        read -p "Choose option [1-3]: " choice
-
-        case $choice in
-            1)
-                echo -e "${BLUE}Proceeding with data population only...${NC}"
-                SKIP_STACK_DEPLOY=true
-                ;;
-            2)
-                echo -e "${BLUE}Updating existing stack...${NC}"
-                SKIP_STACK_DEPLOY=false
-                ;;
-            3)
-                echo "Use cleanup-interview.sh first or choose different interview ID"
-                exit 1
-                ;;
-            *)
-                echo "Invalid choice. Defaulting to data population only."
-                SKIP_STACK_DEPLOY=true
-                ;;
-        esac
-    else
-        echo -e "${RED}❌ Stack $STACK_NAME exists but is not ready (status: $STACK_STATUS)${NC}"
-        echo "Wait for stack to complete or use cleanup-interview.sh first"
-        exit 1
-    fi
-else
-    echo -e "${GREEN}✅ No existing stack found${NC}"
-    SKIP_STACK_DEPLOY=false
-fi
-
-# Package Lambda functions and upload to S3
-echo -e "${BLUE}Packaging Lambda functions...${NC}"
-./package-lambda.sh
-
-# Create temporary deployment bucket for Lambda upload (CloudFormation will create the official one)
-TEMP_DEPLOYMENT_BUCKET="${INTERVIEW_ID}-temp-deployment-$(date +%s)"
-DEPLOYMENT_BUCKET="${INTERVIEW_ID}-deployment"
-echo -e "${BLUE}Creating temporary deployment bucket...${NC}"
-aws s3 mb "s3://$TEMP_DEPLOYMENT_BUCKET" --region "$REGION" --profile personal
-
-# Upload packaged Lambda to temp bucket
-echo -e "${BLUE}Uploading Lambda package to temporary S3 bucket...${NC}"
-aws s3 cp packaged-lambdas/sample-data-api.zip "s3://$TEMP_DEPLOYMENT_BUCKET/$INTERVIEW_ID/sample-data-api.zip" --profile personal --region "$REGION"
-
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Lambda package uploaded successfully${NC}"
-else
-    echo -e "${RED}❌ Lambda package upload failed${NC}"
-    exit 1
-fi
-
-# Deploy CloudFormation stack
-echo -e "${BLUE}Deploying CloudFormation stack...${NC}"
-aws cloudformation deploy \
-    --template-file interview-stack.yaml \
-    --stack-name "$STACK_NAME" \
-    --parameter-overrides \
-        InterviewId="$INTERVIEW_ID" \
-        CandidateName="$CANDIDATE_NAME" \
-        DeploymentBucketName="$TEMP_DEPLOYMENT_BUCKET" \
-    --capabilities CAPABILITY_NAMED_IAM \
-    --profile personal \
-    --region "$REGION" \
-    --no-fail-on-empty-changeset
-
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Stack deployed successfully${NC}"
-else
-    echo -e "${RED}❌ Stack deployment failed${NC}"
+# Check if stack exists
+echo -e "${BLUE}Checking CloudFormation stack...${NC}"
+if ! aws cloudformation describe-stacks --stack-name "$STACK_NAME" --profile personal --region "$REGION" >/dev/null 2>&1; then
+    echo -e "${RED}❌ Stack $STACK_NAME not found${NC}"
+    echo "Run deployment first: ./deploy-interview.sh $CANDIDATE_NAME $INTERVIEW_ID"
     exit 1
 fi
 
@@ -132,13 +49,15 @@ OUTPUTS=$(aws cloudformation describe-stacks \
 
 # Extract key values
 STUDENTS_TABLE=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="StudentsTableName") | .OutputValue')
-BUGGY_LAMBDA=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="BuggyLambdaArn") | .OutputValue')
-CANDIDATE_ROLE=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="CandidateRoleArn") | .OutputValue')
-SAMPLE_DATA_API_URL=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="SampleDataApiUrl") | .OutputValue')
+DB_ENDPOINT=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="DatabaseEndpoint") | .OutputValue')
+DB_PASSWORD=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="DatabasePassword") | .OutputValue')
+
+echo "Students Table: $STUDENTS_TABLE"
+echo "Database: $DB_ENDPOINT"
+echo ""
 
 # Wait for RDS to be available (with extended timeout)
-echo -e "${BLUE}Waiting for RDS instance to be available...${NC}"
-echo -e "${BLUE}⏱️  This can take 10-15 minutes for new RDS instances${NC}"
+echo -e "${BLUE}Checking RDS availability...${NC}"
 DB_INSTANCE_ID="db-${INTERVIEW_ID}-performance"
 aws rds wait db-instance-available \
     --db-instance-identifier "$DB_INSTANCE_ID" \
@@ -150,26 +69,15 @@ aws rds wait db-instance-available \
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✅ RDS instance is ready${NC}"
 else
-    echo -e "${RED}❌ RDS instance failed to become available or timed out${NC}"
-    echo -e "${BLUE}💡 You can continue data population later with:${NC}"
-    echo "   ./populate-data.sh $CANDIDATE_NAME $INTERVIEW_ID"
-    echo -e "${BLUE}💡 Or use the Makefile:${NC}"
-    echo "   make populate-data CANDIDATE=$CANDIDATE_NAME INTERVIEW_ID=$INTERVIEW_ID"
+    echo -e "${RED}❌ RDS instance failed to become available${NC}"
     exit 1
 fi
 
-# Get database connection details
-DB_ENDPOINT=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="DatabaseEndpoint") | .OutputValue')
-DB_PASSWORD=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="DatabasePassword") | .OutputValue')
-
-# Populate PostgreSQL with schema and sample data
-echo -e "${BLUE}Populating PostgreSQL with schema and sample data...${NC}"
-export PGPASSWORD="$DB_PASSWORD"
-
-# Test PostgreSQL connection with retry logic
+# Test PostgreSQL connection with extended retry
 echo -e "${BLUE}Testing PostgreSQL connection...${NC}"
+export PGPASSWORD="$DB_PASSWORD"
 RETRY_COUNT=0
-MAX_RETRIES=5
+MAX_RETRIES=10
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     if psql -h "$DB_ENDPOINT" -U postgres -d postgres -c "SELECT 1;" >/dev/null 2>&1; then
         echo -e "${GREEN}✅ PostgreSQL connection successful${NC}"
@@ -186,8 +94,8 @@ if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
     exit 1
 fi
 
-# Create tables from schema
-echo -e "${BLUE}Creating database schema...${NC}"
+# Create/populate PostgreSQL schema and data
+echo -e "${BLUE}Creating PostgreSQL schema...${NC}"
 psql -h "$DB_ENDPOINT" -U postgres -d postgres -c "
 -- Create tables with sample data for interview challenges
 CREATE TABLE IF NOT EXISTS districts (
@@ -267,7 +175,7 @@ else
     exit 1
 fi
 
-# Insert legacy data with intentional issues for Challenge A
+# Insert sample data with intentional issues
 echo -e "${BLUE}Inserting sample data with intentional data quality issues...${NC}"
 psql -h "$DB_ENDPOINT" -U postgres -d postgres -c "
 -- Insert students with data quality issues for migration challenges
@@ -300,7 +208,7 @@ else
     exit 1
 fi
 
-# Verify data was actually inserted
+# Verify PostgreSQL data
 echo -e "${BLUE}Verifying PostgreSQL data...${NC}"
 STUDENT_COUNT=$(psql -h "$DB_ENDPOINT" -U postgres -d postgres -t -c "SELECT COUNT(*) FROM students;" 2>/dev/null | tr -d ' ')
 ASSESSMENT_COUNT=$(psql -h "$DB_ENDPOINT" -U postgres -d postgres -t -c "SELECT COUNT(*) FROM assessments;" 2>/dev/null | tr -d ' ')
@@ -317,13 +225,13 @@ unset PGPASSWORD
 # Populate DynamoDB with sample data
 echo -e "${BLUE}Populating DynamoDB with sample data...${NC}"
 
-# Check if python3 and boto3 are available
+# Check if python3 is available
 if ! command -v python3 &> /dev/null; then
     echo -e "${RED}❌ python3 not found${NC}"
     exit 1
 fi
 
-# Run Python script with exit code capture
+# Run Python script
 python3 - <<EOF
 import boto3
 import json
@@ -384,7 +292,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Verify DynamoDB data was inserted
+# Verify DynamoDB data
 echo -e "${BLUE}Verifying DynamoDB data...${NC}"
 DYNAMO_COUNT=$(aws dynamodb scan --table-name "$STUDENTS_TABLE" --select "COUNT" --profile personal --region "$REGION" --output text --query 'Count' 2>/dev/null)
 
@@ -395,73 +303,13 @@ else
     exit 1
 fi
 
-# Create candidate credentials file
-CREDS_FILE="candidate-credentials-${INTERVIEW_ID}.txt"
-cat > "$CREDS_FILE" << EOF
-# Amira Learning Interview - AWS Access Credentials
-# Candidate: $CANDIDATE_NAME
-# Interview ID: $INTERVIEW_ID
-# Generated: $(date)
-
-## AWS Configuration
-Region: $REGION
-Role ARN: $CANDIDATE_ROLE
-External ID: ${INTERVIEW_ID}-${CANDIDATE_NAME}
-
-## Resources Available
-Students Table: $STUDENTS_TABLE
-Assessments Table: ${INTERVIEW_ID}-assessments
-Classes Table: ${INTERVIEW_ID}-classes
-Schools Table: ${INTERVIEW_ID}-schools
-
-Buggy Lambda: $BUGGY_LAMBDA
-Database: ${INTERVIEW_ID}-performance-db
-Cache: ${INTERVIEW_ID}-cache
-
-## Challenge Files API
-Sample Data API: $SAMPLE_DATA_API_URL
-Challenge A: $SAMPLE_DATA_API_URL?file=challenge-a-migration.md
-Challenge B (C++/.NET): $SAMPLE_DATA_API_URL?file=challenge-b-debugging.md
-Challenge B (Alternative): $SAMPLE_DATA_API_URL?file=challenge-b-alternative.md
-Challenge C: $SAMPLE_DATA_API_URL?file=challenge-c-optimization.md
-Rapid Fire: $SAMPLE_DATA_API_URL?file=rapid-fire-tasks.md
-
-## AWS CLI Setup (for candidate)
-aws configure set region $REGION
-aws sts assume-role \\
-  --role-arn $CANDIDATE_ROLE \\
-  --role-session-name interview-session \\
-  --external-id ${INTERVIEW_ID}-${CANDIDATE_NAME}
-
-## AWS SDK Setup (for candidate code)
-Role ARN: $CANDIDATE_ROLE
-External ID: ${INTERVIEW_ID}-${CANDIDATE_NAME}
-Region: $REGION
-EOF
-
-echo -e "${GREEN}🎉 Interview environment deployed successfully!${NC}"
 echo ""
-
-# Run verification to ensure everything is ready
-echo -e "${BLUE}🔍 Running environment verification...${NC}"
-./verify-interview-environment.sh "$CANDIDATE_NAME" "$INTERVIEW_ID"
-
-if [ $? -eq 0 ]; then
-    echo ""
-    echo -e "${BLUE}📋 Next Steps:${NC}"
-    echo "1. Generate credentials: ./generate-credentials-email.sh $CANDIDATE_NAME $INTERVIEW_ID"
-    echo "2. Send credentials to candidate 30 minutes before interview"
-    echo "3. After interview, run: ./cleanup-interview.sh $INTERVIEW_ID"
-else
-    echo ""
-    echo -e "${RED}⚠️  Environment verification failed. Check output above.${NC}"
-    echo "You may need to wait a few minutes for all resources to be fully ready."
-    echo "Re-run verification: ./verify-interview-environment.sh $CANDIDATE_NAME $INTERVIEW_ID"
-fi
+echo -e "${GREEN}🎉 Data population completed successfully!${NC}"
 echo ""
-echo -e "${BLUE}📊 Cost Monitor:${NC}"
-echo "ElastiCache: ~\$0.02/hour"
-echo "RDS: Free tier (if under 750 hours/month)"
-echo "Lambda/DynamoDB: Free tier"
+echo -e "${BLUE}📋 Data Summary:${NC}"
+echo "PostgreSQL: $STUDENT_COUNT students, $ASSESSMENT_COUNT assessments"
+echo "DynamoDB: $DYNAMO_COUNT student records"
 echo ""
-echo -e "${BLUE}⏰ Remember: Stack auto-deletes after 24 hours via lifecycle policy${NC}"
+echo -e "${BLUE}💡 Next steps:${NC}"
+echo "1. Run verification: ./verify-interview-environment.sh $CANDIDATE_NAME $INTERVIEW_ID"
+echo "2. Generate credentials: ./generate-credentials-email.sh $CANDIDATE_NAME $INTERVIEW_ID"

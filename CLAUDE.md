@@ -16,7 +16,7 @@ vibe-coding-exercise/
 ├── interviewer-guide.md           # Detailed session management (60-min timeboxing)
 ├── comprehensive-scoring-rubric.md # AI usage evaluation (core innovation)
 ├── QUICK_REFERENCE.md            # Day-of interview checklist
-├── challenges/                   # 3 main + rapid fire challenges
+├── challenges/                   # 3 main challenges + 5 rapid fire tasks
 ├── solutions/                    # Reference implementations (DO NOT SHARE)
 ├── sample-data/                  # Test schemas, APIs, and data
 └── post-interview/              # Evaluation templates and debrief
@@ -24,7 +24,7 @@ vibe-coding-exercise/
 
 ### Challenge Architecture
 
-The framework has **3 core challenges** designed to test different AI usage patterns:
+The framework has **3 main challenges + 5 rapid fire tasks** designed to test different AI usage patterns:
 
 1. **Challenge A (Migration)** - Tests business logic decisions that should NOT use AI
    - Legacy SQL Server → DynamoDB migration
@@ -44,18 +44,18 @@ The framework has **3 core challenges** designed to test different AI usage patt
 ### Scoring Framework Architecture
 
 **Multi-dimensional evaluation (5-point scale per category):**
-- **AI Tool Proficiency (25%)** - Core differentiator
+- **AI Tool Proficiency (25%)** - Core differentiator: strategic vs dependent usage
 - **Technical Execution (25%)** - Code quality and implementation
-- **Problem-Solving (20%)** - Root cause analysis and debugging
-- **Startup Fitness (15%)** - Speed, ambiguity handling, self-direction
+- **Problem-Solving (20%)** - Root cause analysis and debugging methodology
+- **Startup Fitness (15%)** - Speed, context switching, rapid fire performance
 - **Domain Understanding (15%)** - EdTech context and Amira-specific knowledge
 
 ### Time Management Architecture
 
 **60-minute strict timeboxing:**
-- Setup (5 min) → 2 Main Challenges (30 min) → Rapid Fire/Third (10 min) → Wrap-up (5 min)
+- Setup (5 min) → 2 Main Challenges (30 min) → Rapid Fire Tasks (5-10 min) → Wrap-up (5 min)
 - **⭐ PRIORITY:** Two main challenges must be completed
-- **⚡ OPTIONAL:** Third challenge or rapid fire tasks
+- **⚡ OPTIONAL:** Third main challenge or 5 rapid fire tasks (2-3 minutes each)
 - Built-in flexibility for candidate skill level adjustment
 
 ## Commands and Usage

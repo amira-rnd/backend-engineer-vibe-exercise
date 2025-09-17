@@ -281,14 +281,15 @@ If database connection fails:
 
 === INTERVIEW CHALLENGES ===
 
-Download the challenge materials from: [TO BE PROVIDED BY INTERVIEWER]
+Challenges will be presented during the interview session. They test agentic AI-powered development - your ability to work strategically with AI tools:
+- 2-3 main challenges (15 minutes each)
+- 5 rapid fire tasks (2-3 minutes each, if time permits)
 
-The challenges test agentic AI-powered development - your ability to work strategically with AI tools:
-- Challenge A: Legacy Data Migration (15 min, PRIORITY)
-- Challenge B: Memory Leak Debugging (15 min, PRIORITY)
-- Challenge C: Performance Optimization (15 min, OPTIONAL)
+Focus areas: Data migration, debugging, optimization, and adaptability
 
 Expected approach: Use AI for boilerplate/syntax, but demonstrate your problem-solving methodology.
+
+All challenge materials will be provided through the Sample Data API above during the interview.
 
 === READY TO GO ===
 
@@ -314,34 +315,36 @@ $VALIDATION_REPORT
 All systems are ready for your interview session!
 EOF
 
-# Create challenges zip
-echo -e "${BLUE}📦 Creating challenges package...${NC}"
-CHALLENGES_ZIP="$SEND_DIR/interview-challenges.zip"
-cd ../challenges && zip -r "../interviewee-collateral/$CHALLENGES_ZIP" . && cd ../interviewee-collateral
-
 echo -e "${GREEN}✅ Email generated: $EMAIL_FILE${NC}"
-echo -e "${GREEN}✅ Challenges packaged: $CHALLENGES_ZIP${NC}"
 echo ""
 echo -e "${BLUE}📋 Validation Report:${NC}"
 echo -e "$VALIDATION_REPORT"
 echo ""
 
 if [ "$VALIDATION_PASSED" = true ]; then
-    echo -e "${GREEN}📧 Complete package ready to send!${NC}"
+    echo -e "${GREEN}📧 Credentials ready to send!${NC}"
     echo ""
     echo -e "${BLUE}📁 Contents of $SEND_DIR:${NC}"
     ls -la "$SEND_DIR"
-    echo ""
-    echo -e "${BLUE}📦 Challenge files included:${NC}"
-    unzip -l "$CHALLENGES_ZIP"
 else
     echo -e "${RED}⚠️  WARNING: Some tests failed. Fix issues before sending credentials.${NC}"
 fi
 echo ""
+echo -e "${GREEN}🔗 CHALLENGE URLs FOR INTERVIEWER (save these for interview):${NC}"
+echo ""
+echo "Base API: $SAMPLE_DATA_URL"
+echo ""
+echo "📋 Copy/paste these during interview:"
+echo "Challenge A: curl \"$SAMPLE_DATA_URL?file=challenge-a-migration.md\""
+echo "Challenge B (C++/.NET): curl \"$SAMPLE_DATA_URL?file=challenge-b-debugging.md\""
+echo "Challenge B (Alternative): curl \"$SAMPLE_DATA_URL?file=challenge-b-alternative.md\""
+echo "Challenge C: curl \"$SAMPLE_DATA_URL?file=challenge-c-optimization.md\""
+echo "Rapid Fire: curl \"$SAMPLE_DATA_URL?file=rapid-fire-tasks.md\""
+echo ""
 echo -e "${BLUE}💡 Next steps:${NC}"
-echo "1. Send both files in $SEND_DIR to candidate:"
+echo "1. Send email file to candidate:"
 echo "   - Email: $(basename $EMAIL_FILE)"
-echo "   - Challenges: $(basename $CHALLENGES_ZIP)"
 echo "2. Send 30 minutes before interview"
-echo "3. Have candidate test connections and download challenges"
-echo "4. Start interview once verification is complete"
+echo "3. Have candidate test connections and environment setup"
+echo "4. Use URLs above to present challenges during interview"
+echo "5. Start interview once verification is complete"

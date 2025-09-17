@@ -10,48 +10,8 @@ Parameters:
     Type: String
     Description: Candidate name for resource naming
     Default: candidate
-  DeploymentBucketName:
-    Type: String
-    Description: Name of the S3 bucket containing Lambda deployment packages
-    Default: ""
-
-Conditions:
-  CreateDeploymentBucket: !Equals [!Ref DeploymentBucketName, ""]
 
 Resources:
-  # Challenge Files Storage
-  ChallengeFilesBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub '${InterviewId}-challenge-files'
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-      Tags:
-        - Key: Purpose
-          Value: VibeInterview
-        - Key: InterviewId
-          Value: !Ref InterviewId
-
-  # Deployment bucket for Lambda code (only created if no external bucket provided)
-  DeploymentBucket:
-    Type: AWS::S3::Bucket
-    Condition: CreateDeploymentBucket
-    Properties:
-      BucketName: !Sub '${InterviewId}-deployment'
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-      Tags:
-        - Key: Purpose
-          Value: VibeInterview
-        - Key: InterviewId
-          Value: !Ref InterviewId
-
   # Challenge A: DynamoDB Tables for Migration Exercise
   StudentsTable:
     Type: AWS::DynamoDB::Table
@@ -164,14 +124,6 @@ Resources:
                   - !GetAtt AssessmentsTable.Arn
                   - !Sub '${StudentsTable.Arn}/index/*'
                   - !Sub '${AssessmentsTable.Arn}/index/*'
-        - PolicyName: S3ChallengeFilesAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:GetObject
-                Resource: !Sub '${ChallengeFilesBucket.Arn}/*'
 
   BuggyLambdaFunction:
     Type: AWS::Lambda::Function
@@ -259,12 +211,116 @@ Resources:
       Runtime: nodejs18.x
       Handler: index.handler
       Role: !GetAtt LambdaExecutionRole.Arn
-      Environment:
-        Variables:
-          CHALLENGE_BUCKET: !Ref ChallengeFilesBucket
       Code:
-        S3Bucket: !If [CreateDeploymentBucket, !Ref DeploymentBucket, !Ref DeploymentBucketName]
-        S3Key: !Sub '${InterviewId}/sample-data-api.zip'
+        ZipFile: |
+          exports.handler = async (event) => {
+              const schemas = "-- Amira Learning Database Schema\n" +
+                  "-- Current Production Schema (PostgreSQL)\n\n" +
+                  "CREATE TABLE districts (\n" +
+                  "    district_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n" +
+                  "    name VARCHAR(255) NOT NULL,\n" +
+                  "    state VARCHAR(2) NOT NULL,\n" +
+                  "    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n" +
+                  ");\n\n" +
+                  "CREATE TABLE schools (\n" +
+                  "    school_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n" +
+                  "    district_id UUID REFERENCES districts(district_id),\n" +
+                  "    name VARCHAR(255) NOT NULL,\n" +
+                  "    type VARCHAR(50),\n" +
+                  "    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n" +
+                  ");\n\n" +
+                  "CREATE TABLE students (\n" +
+                  "    student_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n" +
+                  "    class_id UUID REFERENCES classes(class_id),\n" +
+                  "    first_name VARCHAR(100),\n" +
+                  "    last_name VARCHAR(100),\n" +
+                  "    grade_level INTEGER CHECK (grade_level >= 0 AND grade_level <= 12),\n" +
+                  "    reading_level DECIMAL(3,1),\n" +
+                  "    status VARCHAR(20) DEFAULT 'ACTIVE',\n" +
+                  "    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n" +
+                  ");";
+
+              const legacyApi = "# Legacy API Documentation\n\n" +
+                  "## Students Endpoint\n" +
+                  "GET /api/v1/students\n\n" +
+                  "Returns array of student records with the following issues:\n" +
+                  "- Grade levels as text (Third, Fourth) instead of numbers\n" +
+                  "- Negative reading levels\n" +
+                  "- NULL reading levels\n" +
+                  "- Inconsistent field naming\n\n" +
+                  "Example Response:\n" +
+                  '```json\n[\n  {\n    "StudentID": 123,\n    "FirstName": "Sarah",\n    "LastName": "Johnson",\n    "Grade": "Third",\n    "ReadingLevel": 3.2,\n    "Status": "Active"\n  }\n]\n```\n\n' +
+                  "## Migration Notes\n" +
+                  "- Clean data quality issues\n" +
+                  "- Standardize field formats\n" +
+                  "- Generate new UUIDs for DynamoDB";
+
+              const testData = {
+                  "legacy_students": [
+                      {
+                          "StudentID": 123,
+                          "FirstName": "Sarah",
+                          "LastName": "Johnson",
+                          "Grade": "Third",
+                          "ReadingLevel": 3.2,
+                          "Status": "Active"
+                      },
+                      {
+                          "StudentID": 124,
+                          "FirstName": "Mike",
+                          "LastName": "Wilson",
+                          "Grade": "3rd",
+                          "ReadingLevel": -1.0,
+                          "Status": "ACTIVE"
+                      },
+                      {
+                          "StudentID": 125,
+                          "FirstName": "Emma",
+                          "LastName": "Davis",
+                          "Grade": "Third",
+                          "ReadingLevel": null,
+                          "Status": "active"
+                      }
+                  ]
+              };
+
+              const file = (event.pathParameters && event.pathParameters.file) ||
+                          (event.queryStringParameters && event.queryStringParameters.file);
+
+              if (file === 'schemas.sql') {
+                  return {
+                      statusCode: 200,
+                      headers: { 'Content-Type': 'text/plain' },
+                      body: schemas
+                  };
+              } else if (file === 'legacy-api-docs.md') {
+                  return {
+                      statusCode: 200,
+                      headers: { 'Content-Type': 'text/plain' },
+                      body: legacyApi
+                  };
+              } else if (file === 'test-data.json') {
+                  return {
+                      statusCode: 200,
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(testData, null, 2)
+                  };
+              } else {
+                  return {
+                      statusCode: 200,
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                          message: 'Sample Data API for Interview',
+                          available_files: [
+                              'schemas.sql',
+                              'legacy-api-docs.md',
+                              'test-data.json'
+                          ],
+                          usage: 'Add ?file=filename to URL'
+                      })
+                  };
+              }
+          };
       MemorySize: 128
       Timeout: 30
       Tags:

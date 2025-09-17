@@ -1,8 +1,8 @@
 # Rapid Fire Challenges
 ## ⚡ IF TIME PERMITS
-## Time: 5 minutes total (60-minute format)
+## Time: 5-10 minutes total
 
-Present 2-3 of these based on remaining time. In 60-minute format, these are optional.
+Present 2-3 of these based on remaining time. These are optional but valuable for evaluating startup fitness and context-switching ability.
 
 ## ⭐ Task 1: Lambda Rate Limiting (PRIORITIZE)
 **Time: 2 minutes**

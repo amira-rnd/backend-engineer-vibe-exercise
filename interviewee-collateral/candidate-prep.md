@@ -21,8 +21,40 @@ This is a collaborative coding session where you'll work through real-world chal
 - [ ] Your preferred development environment (ready to code immediately)
 - [ ] Your AI coding assistant of choice (and any backup options)
 - [ ] Node.js, Python, or .NET Core environment (your choice)
-- [ ] Git for version control
+- [ ] **AWS CLI** installed and ready to use (for accessing AWS resources)
+- [ ] **PostgreSQL client** (psql) for database access
+- [ ] **curl** for API testing (usually pre-installed)
 - [ ] Any personal productivity tools you normally use
+
+#### Quick Installation Guide
+**AWS CLI:**
+```bash
+# macOS
+brew install awscli
+
+# Ubuntu/Debian
+sudo apt update && sudo apt install -y curl unzip
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip && sudo ./aws/install
+
+# Optional: Disable pager if you get pager errors
+export AWS_PAGER=""
+
+# Windows
+# Download installer from: https://awscli.amazonaws.com/AWSCLIV2.msi
+```
+
+**PostgreSQL Client:**
+```bash
+# macOS
+brew install postgresql
+
+# Ubuntu/Debian
+sudo apt install postgresql-client
+
+# Windows
+# Download from: https://www.postgresql.org/download/windows/
+```
 
 #### Mental Preparation
 - Review AWS services: Lambda, DynamoDB, AppSync, S3
@@ -36,7 +68,8 @@ This is a collaborative coding session where you'll work through real-world chal
 - AWS sandbox environment credentials
 - Sample database schemas and test data
 - API documentation
-- Access to a shared repository for your solutions
+- Challenge descriptions during the interview session
+- Screen sharing for challenge materials
 
 ### Session Structure (60 Minutes)
 
@@ -44,14 +77,14 @@ This is a collaborative coding session where you'll work through real-world chal
    - Quick environment setup
    - Brief discussion about your AI tool workflow
 
-2. **Main Challenges (40-45 min)**
-   - 2-3 real-world backend challenges
+2. **Main Challenges (30 min)**
+   - 2 real-world backend challenges (15 minutes each)
    - Data migration, debugging, and/or optimization
-   - Increasing complexity
+   - Challenges will be presented during the session
 
-3. **Quick Tasks (5-10 min)**
-   - Rapid problem-solving if time permits
-   - Tests adaptability and speed
+3. **Rapid Fire Tasks (5-10 min)**
+   - 2-3 quick challenges if time permits
+   - Tests adaptability and context switching
 
 4. **Wrap-up (5 min)**
    - Brief discussion of your solutions
@@ -73,12 +106,14 @@ This is a collaborative coding session where you'll work through real-world chal
 - Think out loud - we want to understand your process
 - Make pragmatic trade-offs and explain them
 - Focus on working solutions over perfect ones
-- Ask for clarification if truly stuck
+- Ask for clarification if requirements are unclear
+- Demonstrate your problem-solving methodology first, then implement
 
 ❌ **DON'T:**
 - Spend too long reading requirements
 - Try to make everything perfect
 - Blindly copy AI suggestions without understanding
+- Let AI make critical business or architecture decisions
 - Forget about error handling completely
 - Over-engineer simple problems
-- Be afraid to use hints if offered
+- Be afraid to ask questions if stuck
