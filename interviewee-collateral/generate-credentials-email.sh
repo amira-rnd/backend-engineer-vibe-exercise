@@ -75,12 +75,12 @@ LAMBDA_NAME=$(echo "$LAMBDA_ARN" | cut -d':' -f7)
 
 echo -e "${BLUE}Generating temporary credentials for candidate...${NC}"
 
-# Assume role to get temporary credentials for candidate (4 hour duration)
+# Assume role to get temporary credentials for candidate (12 hour duration - AWS maximum)
 ROLE_RESPONSE=$(aws sts assume-role \
     --role-arn "$CANDIDATE_ROLE" \
     --role-session-name "interview-${CANDIDATE_NAME}" \
     --external-id "${INTERVIEW_ID}-${CANDIDATE_NAME}" \
-    --duration-seconds 14400 \
+    --duration-seconds 43200 \
     --profile personal \
     --region "$REGION" \
     --output json)
@@ -192,6 +192,9 @@ Hi $CANDIDATE_NAME,
 
 Here are your AWS credentials for the upcoming interview session. Please set these up now and test your access.
 
+⏰ **IMPORTANT**: These credentials are valid for 4 hours from generation time.
+🔄 **If expired**: Contact your interviewer for fresh credentials.
+
 === AWS SETUP INSTRUCTIONS ===
 
 1. SET THESE CREDENTIALS:
@@ -223,21 +226,21 @@ You should see your assumed role in the response.
 === AVAILABLE RESOURCES ===
 
 DynamoDB Tables:
-- Students: $STUDENTS_TABLE
-- Assessments: $ASSESSMENTS_TABLE
-- Classes: $CLASSES_TABLE
-- Schools: $SCHOOLS_TABLE
+- Students: interview-students
+- Assessments: interview-assessments
+- Classes: interview-classes
+- Schools: interview-schools
 
-Lambda Function: $LAMBDA_NAME
+Lambda Function: interview-buggy-api
 
 Sample Data & Schema API: $SAMPLE_DATA_URL
 - Access with: curl "$SAMPLE_DATA_URL?file=schemas.sql"
-- Available files: schemas.sql, test-data.json, legacy-api-docs.md
+- Available files: schemas.sql, test-data.json, legacy-api-docs.md, challenge files
 
 Database Connection:
-- Host: $DB_ENDPOINT
+- Host: interview-db-performance.[region].rds.amazonaws.com
 - User: postgres
-- Password: $DB_PASSWORD
+- Password: [generated password]
 - Database: postgres
 
 Redis Cache: $REDIS_ENDPOINT (VPC-internal only, accessible from Lambda functions)
@@ -281,14 +284,15 @@ If database connection fails:
 
 === INTERVIEW CHALLENGES ===
 
-Download the challenge materials from: [TO BE PROVIDED BY INTERVIEWER]
+Challenges will be presented during the interview session. They test agentic AI-powered development - your ability to work strategically with AI tools:
+- 2-3 main challenges (15 minutes each)
+- 5 rapid fire tasks (2-3 minutes each, if time permits)
 
-The challenges test agentic AI-powered development - your ability to work strategically with AI tools:
-- Challenge A: Legacy Data Migration (15 min, PRIORITY)
-- Challenge B: Memory Leak Debugging (15 min, PRIORITY)
-- Challenge C: Performance Optimization (15 min, OPTIONAL)
+Focus areas: Data migration, debugging, optimization, and adaptability
 
 Expected approach: Use AI for boilerplate/syntax, but demonstrate your problem-solving methodology.
+
+All challenge materials will be provided through the Sample Data API above during the interview.
 
 === READY TO GO ===
 
@@ -309,39 +313,41 @@ Interview Stack: $STACK_NAME
 === PRE-VALIDATED CONNECTION TESTS ===
 
 These connections have been tested and verified by the interviewer:
-$VALIDATION_REPORT
+$(echo -e "$VALIDATION_REPORT")
 
 All systems are ready for your interview session!
 EOF
 
-# Create challenges zip
-echo -e "${BLUE}📦 Creating challenges package...${NC}"
-CHALLENGES_ZIP="$SEND_DIR/interview-challenges.zip"
-cd ../challenges && zip -r "../interviewee-collateral/$CHALLENGES_ZIP" . && cd ../interviewee-collateral
-
 echo -e "${GREEN}✅ Email generated: $EMAIL_FILE${NC}"
-echo -e "${GREEN}✅ Challenges packaged: $CHALLENGES_ZIP${NC}"
 echo ""
 echo -e "${BLUE}📋 Validation Report:${NC}"
 echo -e "$VALIDATION_REPORT"
 echo ""
 
 if [ "$VALIDATION_PASSED" = true ]; then
-    echo -e "${GREEN}📧 Complete package ready to send!${NC}"
+    echo -e "${GREEN}📧 Credentials ready to send!${NC}"
     echo ""
     echo -e "${BLUE}📁 Contents of $SEND_DIR:${NC}"
     ls -la "$SEND_DIR"
-    echo ""
-    echo -e "${BLUE}📦 Challenge files included:${NC}"
-    unzip -l "$CHALLENGES_ZIP"
 else
     echo -e "${RED}⚠️  WARNING: Some tests failed. Fix issues before sending credentials.${NC}"
 fi
 echo ""
+echo -e "${GREEN}🔗 CHALLENGE URLs FOR INTERVIEWER (save these for interview):${NC}"
+echo ""
+echo "Base API: $SAMPLE_DATA_URL"
+echo ""
+echo "📋 Copy/paste these during interview (saves files to current directory):"
+echo "Challenge A: curl \"$SAMPLE_DATA_URL?file=challenge-a-migration.md\" -o challenge-a-migration.md"
+echo "Challenge B (C++/.NET): curl \"$SAMPLE_DATA_URL?file=challenge-b-debugging.md\" -o challenge-b-debugging.md"
+echo "Challenge B (Alternative): curl \"$SAMPLE_DATA_URL?file=challenge-b-alternative.md\" -o challenge-b-alternative.md"
+echo "Challenge C: curl \"$SAMPLE_DATA_URL?file=challenge-c-optimization.md\" -o challenge-c-optimization.md"
+echo "Rapid Fire: curl \"$SAMPLE_DATA_URL?file=rapid-fire-tasks.md\" -o rapid-fire-tasks.md"
+echo ""
 echo -e "${BLUE}💡 Next steps:${NC}"
-echo "1. Send both files in $SEND_DIR to candidate:"
+echo "1. Send email file to candidate:"
 echo "   - Email: $(basename $EMAIL_FILE)"
-echo "   - Challenges: $(basename $CHALLENGES_ZIP)"
 echo "2. Send 30 minutes before interview"
-echo "3. Have candidate test connections and download challenges"
-echo "4. Start interview once verification is complete"
+echo "3. Have candidate test connections and environment setup"
+echo "4. Use URLs above to present challenges during interview"
+echo "5. Start interview once verification is complete"

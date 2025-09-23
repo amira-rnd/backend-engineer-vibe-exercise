@@ -10,13 +10,69 @@ Parameters:
     Type: String
     Description: Candidate name for resource naming
     Default: candidate
+  DeploymentBucketName:
+    Type: String
+    Description: Name of the S3 bucket containing Lambda deployment packages
+    Default: ""
+
+Conditions:
+  CreateDeploymentBucket: !Equals [!Ref DeploymentBucketName, ""]
 
 Resources:
+  # Challenge Files Storage
+  ChallengeFilesBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Sub '${AWS::AccountId}-challenges'
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteAllObjects
+            Status: Enabled
+            ExpirationInDays: 1
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Purpose
+          Value: VibeInterview
+        - Key: InterviewId
+          Value: !Ref InterviewId
+
+  # Deployment bucket for Lambda code (only created if no external bucket provided)
+  DeploymentBucket:
+    Type: AWS::S3::Bucket
+    Condition: CreateDeploymentBucket
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Sub '${AWS::AccountId}-deployment'
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteAllObjects
+            Status: Enabled
+            ExpirationInDays: 1
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Purpose
+          Value: VibeInterview
+        - Key: InterviewId
+          Value: !Ref InterviewId
+
   # Challenge A: DynamoDB Tables for Migration Exercise
   StudentsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub '${InterviewId}-students'
+      TableName: interview-students
       AttributeDefinitions:
         - AttributeName: student_id
           AttributeType: S
@@ -42,7 +98,7 @@ Resources:
   AssessmentsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub '${InterviewId}-assessments'
+      TableName: interview-assessments
       AttributeDefinitions:
         - AttributeName: assessment_id
           AttributeType: S
@@ -66,7 +122,7 @@ Resources:
   ClassesTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub '${InterviewId}-classes'
+      TableName: interview-classes
       AttributeDefinitions:
         - AttributeName: class_id
           AttributeType: S
@@ -81,7 +137,7 @@ Resources:
   SchoolsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub '${InterviewId}-schools'
+      TableName: interview-schools
       AttributeDefinitions:
         - AttributeName: school_id
           AttributeType: S
@@ -97,7 +153,7 @@ Resources:
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub '${InterviewId}-lambda-role'
+      RoleName: interview-lambda-role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -124,11 +180,19 @@ Resources:
                   - !GetAtt AssessmentsTable.Arn
                   - !Sub '${StudentsTable.Arn}/index/*'
                   - !Sub '${AssessmentsTable.Arn}/index/*'
+        - PolicyName: S3ChallengeFilesAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: !Sub '${ChallengeFilesBucket.Arn}/*'
 
   BuggyLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub '${InterviewId}-buggy-api'
+      FunctionName: interview-buggy-api
       Runtime: nodejs18.x
       Handler: index.handler
       Role: !GetAtt LambdaExecutionRole.Arn
@@ -139,58 +203,8 @@ Resources:
           - !Ref PrivateSubnet1
           - !Ref PrivateSubnet2
       Code:
-        ZipFile: |
-          // GraphQL API Lambda Function
-          const AWS = require('aws-sdk');
-          const dynamodb = new AWS.DynamoDB.DocumentClient();
-
-          // Connection pool for reuse across requests
-          const connections = [];
-          let requestCache = new Map();
-
-          exports.handler = async (event) => {
-              try {
-                  // Create connection for this request
-                  const requestId = Date.now();
-                  connections.push({
-                      id: requestId,
-                      client: new AWS.DynamoDB.DocumentClient(),
-                      requestData: new Array(1000).fill(`request-${requestId}`)
-                  });
-
-                  // Cache request for performance
-                  const cacheKey = `query-${requestId}-${Math.random()}`;
-                  requestCache.set(cacheKey, {
-                      queryData: new Array(5000).fill(`cached-query-${requestId}`),
-                      timestamp: Date.now()
-                  });
-
-                  console.log(`Active connections: ${connections.length}`);
-                  console.log(`Cached queries: ${requestCache.size}`);
-
-                  // Get student data
-                  const result = await dynamodb.scan({
-                      TableName: process.env.STUDENTS_TABLE,
-                      Limit: 10
-                  }).promise();
-
-                  return {
-                      statusCode: 200,
-                      body: JSON.stringify({
-                          message: 'Student data retrieved successfully',
-                          activeConnections: connections.length,
-                          cachedQueries: requestCache.size,
-                          studentsFound: result.Items?.length || 0
-                      })
-                  };
-              } catch (error) {
-                  console.error('Error processing request:', error);
-                  return {
-                      statusCode: 500,
-                      body: JSON.stringify({ error: error.message })
-                  };
-              }
-          };
+        S3Bucket: !If [CreateDeploymentBucket, !Ref DeploymentBucket, !Ref DeploymentBucketName]
+        S3Key: !Sub '${InterviewId}/buggy-lambda.zip'
       Environment:
         Variables:
           STUDENTS_TABLE: !Ref StudentsTable
@@ -207,120 +221,16 @@ Resources:
   SampleDataFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub '${InterviewId}-sample-data-api'
+      FunctionName: interview-sample-data-api
       Runtime: nodejs18.x
       Handler: index.handler
       Role: !GetAtt LambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          CHALLENGE_BUCKET: !Ref ChallengeFilesBucket
       Code:
-        ZipFile: |
-          exports.handler = async (event) => {
-              const schemas = "-- Amira Learning Database Schema\n" +
-                  "-- Current Production Schema (PostgreSQL)\n\n" +
-                  "CREATE TABLE districts (\n" +
-                  "    district_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n" +
-                  "    name VARCHAR(255) NOT NULL,\n" +
-                  "    state VARCHAR(2) NOT NULL,\n" +
-                  "    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n" +
-                  ");\n\n" +
-                  "CREATE TABLE schools (\n" +
-                  "    school_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n" +
-                  "    district_id UUID REFERENCES districts(district_id),\n" +
-                  "    name VARCHAR(255) NOT NULL,\n" +
-                  "    type VARCHAR(50),\n" +
-                  "    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n" +
-                  ");\n\n" +
-                  "CREATE TABLE students (\n" +
-                  "    student_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n" +
-                  "    class_id UUID REFERENCES classes(class_id),\n" +
-                  "    first_name VARCHAR(100),\n" +
-                  "    last_name VARCHAR(100),\n" +
-                  "    grade_level INTEGER CHECK (grade_level >= 0 AND grade_level <= 12),\n" +
-                  "    reading_level DECIMAL(3,1),\n" +
-                  "    status VARCHAR(20) DEFAULT 'ACTIVE',\n" +
-                  "    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n" +
-                  ");";
-
-              const legacyApi = "# Legacy API Documentation\n\n" +
-                  "## Students Endpoint\n" +
-                  "GET /api/v1/students\n\n" +
-                  "Returns array of student records with the following issues:\n" +
-                  "- Grade levels as text (Third, Fourth) instead of numbers\n" +
-                  "- Negative reading levels\n" +
-                  "- NULL reading levels\n" +
-                  "- Inconsistent field naming\n\n" +
-                  "Example Response:\n" +
-                  '```json\n[\n  {\n    "StudentID": 123,\n    "FirstName": "Sarah",\n    "LastName": "Johnson",\n    "Grade": "Third",\n    "ReadingLevel": 3.2,\n    "Status": "Active"\n  }\n]\n```\n\n' +
-                  "## Migration Notes\n" +
-                  "- Clean data quality issues\n" +
-                  "- Standardize field formats\n" +
-                  "- Generate new UUIDs for DynamoDB";
-
-              const testData = {
-                  "legacy_students": [
-                      {
-                          "StudentID": 123,
-                          "FirstName": "Sarah",
-                          "LastName": "Johnson",
-                          "Grade": "Third",
-                          "ReadingLevel": 3.2,
-                          "Status": "Active"
-                      },
-                      {
-                          "StudentID": 124,
-                          "FirstName": "Mike",
-                          "LastName": "Wilson",
-                          "Grade": "3rd",
-                          "ReadingLevel": -1.0,
-                          "Status": "ACTIVE"
-                      },
-                      {
-                          "StudentID": 125,
-                          "FirstName": "Emma",
-                          "LastName": "Davis",
-                          "Grade": "Third",
-                          "ReadingLevel": null,
-                          "Status": "active"
-                      }
-                  ]
-              };
-
-              const file = (event.pathParameters && event.pathParameters.file) ||
-                          (event.queryStringParameters && event.queryStringParameters.file);
-
-              if (file === 'schemas.sql') {
-                  return {
-                      statusCode: 200,
-                      headers: { 'Content-Type': 'text/plain' },
-                      body: schemas
-                  };
-              } else if (file === 'legacy-api-docs.md') {
-                  return {
-                      statusCode: 200,
-                      headers: { 'Content-Type': 'text/plain' },
-                      body: legacyApi
-                  };
-              } else if (file === 'test-data.json') {
-                  return {
-                      statusCode: 200,
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify(testData, null, 2)
-                  };
-              } else {
-                  return {
-                      statusCode: 200,
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                          message: 'Sample Data API for Interview',
-                          available_files: [
-                              'schemas.sql',
-                              'legacy-api-docs.md',
-                              'test-data.json'
-                          ],
-                          usage: 'Add ?file=filename to URL'
-                      })
-                  };
-              }
-          };
+        S3Bucket: !If [CreateDeploymentBucket, !Ref DeploymentBucket, !Ref DeploymentBucketName]
+        S3Key: !Sub '${InterviewId}/sample-data-api.zip'
       MemorySize: 128
       Timeout: 30
       Tags:
@@ -331,7 +241,7 @@ Resources:
   SampleDataApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
-      Name: !Sub '${InterviewId}-sample-data-api'
+      Name: interview-sample-data-api
       Description: Sample data API for interview candidates
 
   SampleDataApiResource:
@@ -410,8 +320,9 @@ Resources:
 
   DatabaseInstance:
     Type: AWS::RDS::DBInstance
+    DeletionPolicy: Delete
     Properties:
-      DBInstanceIdentifier: !Sub 'db-${InterviewId}-performance'
+      DBInstanceIdentifier: interview-db-performance
       DBInstanceClass: db.t3.micro
       Engine: postgres
       EngineVersion: '15.14'
@@ -443,6 +354,7 @@ Resources:
 
   CacheCluster:
     Type: AWS::ElastiCache::CacheCluster
+    DeletionPolicy: Delete
     Properties:
       CacheNodeType: cache.t3.micro
       Engine: redis
@@ -474,6 +386,7 @@ Resources:
 
   AttachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
+    DeletionPolicy: Delete
     Properties:
       VpcId: !Ref InterviewVPC
       InternetGatewayId: !Ref InternetGateway
@@ -685,15 +598,15 @@ Resources:
   CostAlertTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub '${InterviewId}-cost-alerts'
+      TopicName: interview-cost-alerts
       DisplayName: Interview Cost Alerts
 
   # Candidate IAM Role
   CandidateRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub '${InterviewId}-candidate-role'
-      MaxSessionDuration: 14400  # 4 hours
+      RoleName: interview-candidate-role
+      MaxSessionDuration: 43200  # 12 hours (AWS maximum)
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -738,7 +651,7 @@ Resources:
                   - logs:DescribeLogStreams
                   - logs:GetLogEvents
                   - logs:FilterLogEvents
-                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${InterviewId}-*'
+                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/interview-*'
               - Effect: Allow
                 Action:
                   - cloudwatch:GetMetricStatistics

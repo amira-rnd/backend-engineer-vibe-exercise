@@ -38,44 +38,79 @@ If unsure:
 - Performance implications
 
 ✅ **AI Usage Discipline**
-- Must identify issues before fixing
-- Cannot rely on AI for root cause
-- Should validate all solutions
+- Should understand architecture before using AI tools
+- Can use AI for initial discovery but must go beyond it
+- Must validate and explain all AI findings
+- Should identify issues AI missed through manual analysis
 
 ### Key Differences
 
 | Aspect | Original (C++/.NET) | Alternative (Node.js) |
 |--------|---------------------|----------------------|
-| **Stack Knowledge** | C++, .NET, P/Invoke | JavaScript, async/await |
-| **Error Types** | SIGSEGV, marshalling | Heap exhaustion, stack overflow |
-| **Memory Issues** | Unmanaged memory | Event loops, closures |
-| **Complexity** | Cross-language | Pure JavaScript |
-| **Accessibility** | Specialized | Mainstream |
+| **Stack Knowledge** | C++, .NET, P/Invoke, Edge.js | JavaScript, EventEmitter, async/await |
+| **Error Types** | SIGSEGV, marshalling, AppDomain | Heap exhaustion, stack overflow |
+| **Memory Issues** | Connection pools, unmanaged code | Event loops, closures, caches |
+| **Architecture** | 6 modules, 10+ leak sources | Single service, 7 leak sources |
+| **Complexity** | **EQUAL** - Multi-module analysis | **EQUAL** - Complex object graphs |
+| **Accessibility** | Specialized .NET knowledge | Mainstream JavaScript |
 
 ### Evaluation Consistency
 
-Both challenges use the same scoring:
-- 5 points: Identifies all issues, systematic approach
-- 4 points: Finds most problems, good methodology
-- 3 points: Basic understanding, some fixes
-- 2 points: Struggles, needs heavy guidance
-- 1 point: Cannot debug independently
+Both challenges now have **equivalent complexity** and use the same scoring:
+- **5 points**: Identifies 6+ memory leak sources, systematic multi-module analysis
+- **4 points**: Finds 4-5 problems, traces through architecture methodically
+- **3 points**: Identifies some key issues, basic debugging approach
+- **2 points**: Struggles with complexity, needs heavy guidance
+- **1 point**: Cannot debug systematically across modules
 
 ### Red Flags (Same for Both)
 
-❌ Immediately asks AI to find the bug
-❌ Cannot explain the symptoms
-❌ No systematic debugging approach
-❌ Blindly implements AI suggestions
-❌ Cannot identify ANY issue without help
+❌ **AI-Only Dependency**: Only relies on AI without further analysis
+❌ **No Architecture Understanding**: Cannot trace through multiple modules systematically
+❌ **Missing Methodology**: No systematic debugging approach beyond AI suggestions
+❌ **Surface-Level Analysis**: Cannot distinguish real leaks from performance issues
+❌ **Blind Implementation**: Implements AI suggestions without understanding them
+❌ **Zero Independent Analysis**: Cannot identify ANY issue without AI help
+❌ **Stops After AI**: Accepts AI findings as complete without validation
 
 ### Green Flags (Same for Both)
 
-✅ Analyzes symptoms before diving in
-✅ Identifies multiple issues
-✅ Explains WHY each issue causes problems
-✅ Proposes monitoring/prevention
-✅ Uses AI for implementation after understanding
+✅ **Systematic Architecture Analysis**: Traces through all modules/components methodically
+✅ **Independent Problem Identification**: Finds multiple memory leak sources without AI dependency
+✅ **Pattern Recognition**: Distinguishes real leaks from performance red herrings
+✅ **Deep Understanding**: Explains WHY each issue causes memory growth
+✅ **Domain Knowledge**: Recognizes common patterns (event listeners, unbounded caches, etc.)
+✅ **Strategic AI Usage**: Uses AI for initial discovery, then validates and extends findings
+✅ **Efficient Tool Use**: Combines AI assistance with manual investigation
+✅ **Goes Beyond AI**: Identifies issues AI missed through systematic analysis
+✅ **Validation Skills**: Can explain and improve upon AI suggestions
+✅ **Monitoring Mindset**: Proposes prevention strategies and observability improvements
+
+### AI Usage: Acceptable vs Concerning Patterns
+
+#### ✅ **GOOD: AI-First Approach (Efficient & Strategic)**
+```
+"Let me quickly understand the architecture... 6 modules, interesting.
+AI, analyze this code for potential memory leaks.
+[Reviews AI findings]
+Okay, so it found connection pool growth and event listener accumulation.
+Let me trace through manually to see what it missed...
+[Systematic analysis continues]
+I see AI missed the circular reference in data-enricher.js."
+```
+
+#### ❌ **BAD: AI-Only Approach (Over-Dependent)**
+```
+"AI, fix all the memory leaks in this code.
+[Copies AI suggestions without review]
+Done, the AI found everything that needs fixing."
+```
+
+#### 🤔 **NUANCED: What Evaluators Should Look For**
+- **Time to Understanding**: Do they grasp what AI found and why?
+- **Going Beyond**: Do they find issues AI missed?
+- **Validation**: Do they test or question AI suggestions?
+- **Root Cause**: Can they explain the underlying problems?
 
 ### Interview Flow
 
@@ -86,9 +121,10 @@ Both challenges use the same scoring:
    - "Here's the code and error logs"
 
 3. **Watch for same behaviors:**
-   - Do they read all the code first?
-   - Do they identify patterns?
-   - Do they ask clarifying questions?
+   - Do they systematically read through all modules?
+   - Do they trace data flow and object lifecycles?
+   - Do they identify multiple leak sources?
+   - Do they distinguish real leaks from performance issues?
 
 4. **Probe the same way:**
    - "Why does this cause a leak?"
@@ -97,10 +133,18 @@ Both challenges use the same scoring:
 
 ### Note for Scoring
 
-The alternative is NOT easier - it has more subtle bugs:
-- 7 potential memory leak sources vs 4 in original
-- Circular reference complexity
-- Event emitter gotchas
-- Recursive depth issues
+**IMPORTANT**: Both challenges now have **equivalent complexity**:
 
-Choose based on candidate comfort, not difficulty.
+**Original (C++/.NET)**:
+- 6 modules with 10+ memory leak sources
+- Multi-module architecture analysis required
+- Event listeners, connection pools, unbounded caches
+- .NET/Edge.js interop complexity
+
+**Alternative (Node.js)**:
+- Single service with 7 memory leak sources
+- Complex object graph analysis required
+- Event emitters, circular references, recursive depth
+- Pure JavaScript but equally challenging
+
+**Choose based on candidate stack experience, NOT difficulty level.**
