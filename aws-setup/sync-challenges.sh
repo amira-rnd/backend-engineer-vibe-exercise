@@ -67,7 +67,7 @@ PROJECT_DIR="$(dirname "$0")/lambda-functions/sample-data-api/challenge-b-projec
 
 if [ -d "$PROJECT_DIR" ]; then
     # Upload main project files
-    for file in main.js package.json README.md; do
+    for file in index.js main.js package.json README.md; do
         if [ -f "$PROJECT_DIR/$file" ]; then
             echo "  -> $file"
             aws s3 cp "$PROJECT_DIR/$file" "s3://$BUCKET_NAME/$file" --content-type "text/plain" --profile personal

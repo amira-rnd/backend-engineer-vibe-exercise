@@ -159,18 +159,20 @@ fi
 # Package Lambda functions and upload to S3
 echo -e "${BLUE}Packaging Lambda functions...${NC}"
 ./package-lambda.sh
+./package-buggy-lambda.sh
 
 # Create temporary deployment bucket for Lambda upload (CloudFormation will create the official one)
 TEMP_DEPLOYMENT_BUCKET="${AWS_ACCOUNT_ID}-temp-deployment-$(date +%s)"
 echo -e "${BLUE}Creating temporary deployment bucket...${NC}"
 aws s3 mb "s3://$TEMP_DEPLOYMENT_BUCKET" --region "$REGION" --profile personal
 
-# Upload packaged Lambda to temp bucket
-echo -e "${BLUE}Uploading Lambda package to temporary S3 bucket...${NC}"
+# Upload packaged Lambdas to temp bucket
+echo -e "${BLUE}Uploading Lambda packages to temporary S3 bucket...${NC}"
 aws s3 cp packaged-lambdas/sample-data-api.zip "s3://$TEMP_DEPLOYMENT_BUCKET/${INTERVIEW_ID}/sample-data-api.zip" --profile personal --region "$REGION"
+aws s3 cp packaged-lambdas/buggy-lambda.zip "s3://$TEMP_DEPLOYMENT_BUCKET/${INTERVIEW_ID}/buggy-lambda.zip" --profile personal --region "$REGION"
 
 if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Lambda package uploaded successfully${NC}"
+    echo -e "${GREEN}✅ Lambda packages uploaded successfully${NC}"
 else
     echo -e "${RED}❌ Lambda package upload failed${NC}"
     exit 1

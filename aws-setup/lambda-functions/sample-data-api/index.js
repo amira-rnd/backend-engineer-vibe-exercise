@@ -149,6 +149,7 @@ Example Response:
                     'legacy-students.csv',
                     'legacy-assessments.csv',
                     'setup-project.sh',
+                    'index.js',
                     'main.js',
                     'package.json',
                     'README.md',
@@ -156,7 +157,8 @@ Example Response:
                     'lib/legacy-client.js',
                     'lib/cache-manager.js',
                     'lib/metrics-collector.js',
-                    'lib/data-enricher.js'
+                    'lib/data-enricher.js',
+                    'lib/validation-middleware.js'
                 ],
                 usage: 'Add ?file=filename to URL',
                 example: 'curl "$SAMPLE_DATA_URL?file=challenge-a-migration.md"'
@@ -205,6 +207,7 @@ Example Response:
                         'legacy-students.csv',
                         'legacy-assessments.csv',
                         'setup-project.sh',
+                        'index.js',
                         'main.js',
                         'package.json',
                         'README.md',
@@ -212,7 +215,8 @@ Example Response:
                         'lib/legacy-client.js',
                         'lib/cache-manager.js',
                         'lib/metrics-collector.js',
-                        'lib/data-enricher.js'
+                        'lib/data-enricher.js',
+                        'lib/validation-middleware.js'
                     ]),
                     note: 'Challenge files are served from S3. If missing, run: aws-setup/sync-challenges.sh <interview-id>'
                 })

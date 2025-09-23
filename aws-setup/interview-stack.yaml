@@ -203,58 +203,8 @@ Resources:
           - !Ref PrivateSubnet1
           - !Ref PrivateSubnet2
       Code:
-        ZipFile: |
-          // GraphQL API Lambda Function
-          const AWS = require('aws-sdk');
-          const dynamodb = new AWS.DynamoDB.DocumentClient();
-
-          // Connection pool for reuse across requests
-          const connections = [];
-          let requestCache = new Map();
-
-          exports.handler = async (event) => {
-              try {
-                  // Create connection for this request
-                  const requestId = Date.now();
-                  connections.push({
-                      id: requestId,
-                      client: new AWS.DynamoDB.DocumentClient(),
-                      requestData: new Array(1000).fill(`request-${requestId}`)
-                  });
-
-                  // Cache request for performance
-                  const cacheKey = `query-${requestId}-${Math.random()}`;
-                  requestCache.set(cacheKey, {
-                      queryData: new Array(5000).fill(`cached-query-${requestId}`),
-                      timestamp: Date.now()
-                  });
-
-                  console.log(`Active connections: ${connections.length}`);
-                  console.log(`Cached queries: ${requestCache.size}`);
-
-                  // Get student data
-                  const result = await dynamodb.scan({
-                      TableName: process.env.STUDENTS_TABLE,
-                      Limit: 10
-                  }).promise();
-
-                  return {
-                      statusCode: 200,
-                      body: JSON.stringify({
-                          message: 'Student data retrieved successfully',
-                          activeConnections: connections.length,
-                          cachedQueries: requestCache.size,
-                          studentsFound: result.Items?.length || 0
-                      })
-                  };
-              } catch (error) {
-                  console.error('Error processing request:', error);
-                  return {
-                      statusCode: 500,
-                      body: JSON.stringify({ error: error.message })
-                  };
-              }
-          };
+        S3Bucket: !If [CreateDeploymentBucket, !Ref DeploymentBucket, !Ref DeploymentBucketName]
+        S3Key: !Sub '${InterviewId}/buggy-lambda.zip'
       Environment:
         Variables:
           STUDENTS_TABLE: !Ref StudentsTable
