@@ -8,6 +8,14 @@
 
 ## 🚫 Areas Where Candidates Should NOT Use AI
 
+### 🔴 Instant Red Flags
+
+#### **AI-Only Dependency (Major Concern)**
+- ❌ Only uses AI findings without further analysis
+- ❌ Cannot identify issues beyond what AI suggests
+- ❌ Accepts AI output without validation or understanding
+- ❌ Stops investigation after AI provides initial results
+
 ### Critical Decision Points (Automatic Red Flags if AI-Dependent)
 
 #### 1. Root Cause Analysis
@@ -138,6 +146,14 @@
 - Using AI to scan for memory leak patterns, then systematically validating findings
 - Getting initial AI suggestions, then analyzing each module manually
 - Identifying additional leak sources beyond what AI suggested
+
+**🟢 Good AI Usage Examples:**
+- ✅ "AI, scan this code for memory leaks... okay, found several, let me analyze each one"
+- ✅ "Let me use AI to get initial patterns, then validate manually"
+- ✅ "AI gave me these findings, but I see it missed the connection lifecycle issue"
+- ✅ Tests AI code before using it
+- ✅ Questions suspicious or incomplete output
+- ✅ Identifies what AI missed through manual analysis
 
 #### Alternative Version (Node.js/Python/Java)
 **What They Should NOT Use AI For (Root Cause Analysis):**
@@ -363,10 +379,17 @@ These behaviors indicate exceptional candidates:
 - Challenge C optimization strategy:
 - Rapid fire adaptability:
 
-**Overall AI Maturity Level:** 
-□ Master (uses as tool) 
-□ Competent (good balance) 
-□ Developing (over-relies) 
+**Overall AI Maturity Level:**
+□ Master (uses as tool)
+□ Competent (good balance)
+□ Developing (over-relies)
 □ Concerning (dependent)
+
+### 🎯 The Key Question
+
+**"Could they solve this problem if AI gave them wrong information?"**
+
+If No → Red flag
+If Yes → Green flag
 
 **Recommendation:** _______________

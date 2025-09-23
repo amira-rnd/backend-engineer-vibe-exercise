@@ -138,10 +138,25 @@ You can access schemas and sample data via the API provided in your credentials 
 
 ### Challenge B: API Debugging (15 minutes if selected)
 
+**🔍 Challenge B Selection Guidance:**
+
+Ask candidate: *"Tell me about your experience with different tech stacks"*
+
+**Decision Tree:**
+- **C++, .NET, P/Invoke, or COM interop experience** → Use ORIGINAL (challenge-b-debugging.md)
+- **Primarily Node.js/Python/Java/Go** → Use ALTERNATIVE (challenge-b-alternative.md)
+- **If unsure:** Show them SIGSEGV/Exit Code 139 errors
+  - If they recognize it → Original
+  - If confused by C++ references → Alternative
+
+**Both test identical skills:**
+- Systematic debugging methodology
+- Multi-module memory leak identification
+- Resource management understanding
+- AI usage discipline (find issues AI missed)
+
 **Present Challenge via:**
-- **FIRST: Check background for version selection**
-  - C++/.NET experience: Copy/paste Challenge B (C++/.NET) curl command from `make credentials` output
-  - Otherwise: Copy/paste Challenge B (Alternative) curl command from `make credentials` output
+- **Selected version:** Copy/paste appropriate curl command from `make credentials` output
 - **Alternative:** Screen share challenges/ directory if API is unavailable
 - **Backup:** Copy/paste challenge text into chat
 
@@ -358,7 +373,8 @@ app.get('/api/data/:id', async (req, res) => {
 ### 🔍 RAPID FIRE SOLUTIONS & GUIDANCE
 
 #### **Task 1: Lambda Rate Limiting** ⭐ PRIORITIZE
-**Expected Solution:**
+
+**JavaScript Solution:**
 ```javascript
 const AWS = require('aws-sdk');
 const ddb = new AWS.DynamoDB.DocumentClient();
@@ -388,6 +404,43 @@ exports.handler = async (event) => {
 };
 ```
 
+**Python Solution:**
+```python
+import json
+import time
+import boto3
+from botocore.exceptions import ClientError
+
+def lambda_handler(event, context):
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table('RateLimit')
+
+    user_id = event['userId']
+    action = event['action']
+    minute = int(time.time() // 60)
+    key = f'rate_limit:{user_id}:{minute}'
+
+    try:
+        table.update_item(
+            Key={'id': key},
+            UpdateExpression='ADD #count :one',
+            ExpressionAttributeNames={'#count': 'count'},
+            ExpressionAttributeValues={':one': 1, ':limit': 100},
+            ConditionExpression='attribute_not_exists(#count) OR #count < :limit'
+        )
+        return {
+            'statusCode': 200,
+            'body': json.dumps('Success')
+        }
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+            return {
+                'statusCode': 429,
+                'body': json.dumps('Rate limit exceeded')
+            }
+        raise
+```
+
 **Key Points to Look For:**
 - ✅ DynamoDB or Redis for storage
 - ✅ Sliding window approach (minute-based key)
@@ -400,7 +453,8 @@ exports.handler = async (event) => {
 - "Consider race conditions with concurrent requests"
 
 #### **Task 2: BatchGetItem Bug Fix**
-**Expected Solution:**
+
+**JavaScript Solution:**
 ```javascript
 async function getBatch(ids) {
     let allItems = [];
@@ -432,6 +486,40 @@ async function getBatch(ids) {
 }
 ```
 
+**Python Solution:**
+```python
+import boto3
+import time
+
+def get_batch(ids):
+    dynamodb = boto3.resource('dynamodb')
+    all_items = []
+    remaining_keys = [
+        {'PK': f'STUDENT#{id}', 'SK': 'PROFILE'}
+        for id in ids
+    ]
+
+    while remaining_keys:
+        # DynamoDB has 100 item limit
+        batch = remaining_keys[:100]
+        remaining_keys = remaining_keys[100:]
+
+        request_items = {
+            'Students': {'Keys': batch}
+        }
+
+        response = dynamodb.batch_get_item(RequestItems=request_items)
+        all_items.extend(response['Responses']['Students'])
+
+        # Handle unprocessed keys
+        unprocessed = response.get('UnprocessedKeys', {}).get('Students', {}).get('Keys', [])
+        if unprocessed:
+            remaining_keys = unprocessed + remaining_keys
+            time.sleep(0.1)  # Backoff
+
+    return all_items
+```
+
 **Key Points to Look For:**
 - ✅ Handles UnprocessedKeys
 - ✅ Respects 100 item batch limit
@@ -444,7 +532,8 @@ async function getBatch(ids) {
 - "How would you handle throttling?"
 
 #### **Task 3: Recursive CTE Conversion**
-**Expected Solution:**
+
+**JavaScript Solution:**
 ```javascript
 async function getSubordinates() {
     // Get all employees first
@@ -484,6 +573,48 @@ async function getSubordinates() {
 }
 ```
 
+**Python Solution:**
+```python
+from collections import deque
+
+def get_subordinates(employees):
+    # Create employee map for efficient lookup
+    emp_map = {emp['employee_id']: emp for emp in employees}
+
+    # Find root managers
+    roots = [emp for emp in employees if emp['manager_id'] is None]
+    result = []
+
+    # BFS traversal
+    queue = deque([{**emp, 'level': 0} for emp in roots])
+    visited = set()
+
+    while queue:
+        current = queue.popleft()
+
+        # Prevent cycles
+        if current['employee_id'] in visited:
+            continue
+        visited.add(current['employee_id'])
+
+        result.append(current)
+
+        # Add subordinates to queue
+        subordinates = [
+            emp for emp in employees
+            if emp['manager_id'] == current['employee_id']
+            and emp['employee_id'] not in visited
+        ]
+
+        for emp in subordinates:
+            queue.append({
+                **emp,
+                'level': current['level'] + 1
+            })
+
+    return result
+```
+
 **Key Points to Look For:**
 - ✅ BFS or DFS approach
 - ✅ Cycle detection (prevents infinite loops)
@@ -496,7 +627,8 @@ async function getSubordinates() {
 - "Consider breadth-first vs depth-first"
 
 #### **Task 4: CloudWatch Monitoring**
-**Expected Solution:**
+
+**JavaScript Solution:**
 ```javascript
 const AWS = require('aws-sdk');
 const cloudwatch = new AWS.CloudWatch();
@@ -558,6 +690,66 @@ async function processRequest(request) {
 }
 ```
 
+**Python Solution:**
+```python
+import time
+import boto3
+from botocore.exceptions import ClientError
+
+async def process_request(request):
+    cloudwatch = boto3.client('cloudwatch')
+    start_time = time.time()
+
+    try:
+        result = await complex_operation(request)
+
+        # Success metrics
+        latency = (time.time() - start_time) * 1000  # Convert to milliseconds
+        cloudwatch.put_metric_data(
+            Namespace='MyApp/API',
+            MetricData=[{
+                'MetricName': 'RequestLatency',
+                'Value': latency,
+                'Unit': 'Milliseconds',
+                'Timestamp': time.time()
+            }]
+        )
+
+        return result
+
+    except Exception as error:
+        # Error metrics
+        latency = (time.time() - start_time) * 1000
+        metric_data = [
+            {
+                'MetricName': 'ErrorRate',
+                'Value': 1,
+                'Unit': 'Count'
+            },
+            {
+                'MetricName': 'RequestLatency',
+                'Value': latency,
+                'Unit': 'Milliseconds'
+            }
+        ]
+
+        # Check for DynamoDB throttling
+        if isinstance(error, ClientError):
+            if error.response['Error']['Code'] == 'ProvisionedThroughputExceededException':
+                metric_data.append({
+                    'MetricName': 'ThrottleCount',
+                    'Value': 1,
+                    'Unit': 'Count'
+                })
+
+        cloudwatch.put_metric_data(
+            Namespace='MyApp/API',
+            MetricData=metric_data
+        )
+
+        raise
+```
+
 **Key Points to Look For:**
 - ✅ Custom CloudWatch metrics
 - ✅ Proper metric units (Milliseconds, Count)
@@ -570,7 +762,8 @@ async function processRequest(request) {
 - "Consider DynamoDB-specific error codes"
 
 #### **Task 5: Memory Leak Fix**
-**Expected Solution:**
+
+**JavaScript Solution:**
 ```javascript
 const LRU = require('lru-cache');
 
@@ -624,6 +817,64 @@ app.get('/api/data/:id', async (req, res) => {
 
     res.json(cache.get(id));
 });
+```
+
+**Python Solution:**
+```python
+from functools import lru_cache
+from flask import Flask, request, jsonify
+import time
+from collections import OrderedDict
+
+app = Flask(__name__)
+
+# Option 1: Using functools.lru_cache (function-level)
+@lru_cache(maxsize=1000)
+async def fetch_and_cache_dataset(id):
+    return await fetch_large_dataset(id)
+
+# Option 2: Manual LRU implementation
+class LRUCache:
+    def __init__(self, max_size=1000, ttl=600):  # 10 minutes TTL
+        self.cache = OrderedDict()
+        self.timestamps = {}
+        self.max_size = max_size
+        self.ttl = ttl
+
+    def get(self, key):
+        if key in self.cache:
+            # Check TTL
+            if time.time() - self.timestamps[key] > self.ttl:
+                del self.cache[key]
+                del self.timestamps[key]
+                return None
+
+            # Move to end (most recently used)
+            self.cache.move_to_end(key)
+            return self.cache[key]
+        return None
+
+    def set(self, key, value):
+        # Remove oldest if at capacity
+        if len(self.cache) >= self.max_size:
+            oldest_key = next(iter(self.cache))
+            del self.cache[oldest_key]
+            del self.timestamps[oldest_key]
+
+        self.cache[key] = value
+        self.timestamps[key] = time.time()
+
+cache = LRUCache()
+
+@app.route('/api/data/<id>')
+async def get_data(id):
+    data = cache.get(id)
+
+    if data is None:
+        data = await fetch_large_dataset(id)
+        cache.set(id, data)
+
+    return jsonify(data)
 ```
 
 **Key Points to Look For:**

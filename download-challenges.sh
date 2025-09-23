@@ -72,6 +72,11 @@ while IFS= read -r file; do
 
     echo -e "${BLUE}Downloading $file...${NC}"
 
+    # Create directory structure if needed
+    if [[ "$file" == */* ]]; then
+        mkdir -p "$(dirname "$file")"
+    fi
+
     if curl -f "$API_URL?file=$file" -o "$file" -s; then
         # Verify file has content
         if [ -s "$file" ]; then

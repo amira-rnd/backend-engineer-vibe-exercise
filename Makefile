@@ -2,7 +2,7 @@
 # Makefile for Interview Environment Management
 # Usage: make help
 
-.PHONY: help prep-email setup deploy verify credentials cleanup clean status
+.PHONY: help prep-email setup deploy verify credentials cleanup clean status reset
 
 # Default target
 help: ## 📖 Show this help message
@@ -27,6 +27,7 @@ help: ## 📖 Show this help message
 	@echo "  └── make credentials    - 🧹 Clean + 📧 generate email + 📦 zip challenges"
 	@echo ""
 	@echo "  4️⃣  INTERVIEW SESSION"
+	@echo "  ├── make reset          - ⚡ Quick reset environment (1-2 min vs 20+ min rebuild)"
 	@echo "  └── (No additional steps needed - credentials validation is automatic)"
 	@echo ""
 	@echo "  5️⃣  CLEANUP (After interview)"
@@ -38,6 +39,7 @@ help: ## 📖 Show this help message
 	@echo "  make prep-email                              # Show prep file location"
 	@echo "  make deploy CANDIDATE=john-doe"
 	@echo "  make credentials CANDIDATE=john-doe          # Auto-cleans first"
+	@echo "  make reset CANDIDATE=john-doe                # Quick reset between interviews"
 	@echo "  make cleanup CANDIDATE=john-doe"
 	@echo "  make force-cleanup CANDIDATE=john-doe        # Only if normal cleanup fails"
 	@echo ""
@@ -136,6 +138,17 @@ populate-data: ## 🔄 Re-populate database and DynamoDB data (if seeding failed
 	@$(call check_candidate)
 	@echo "🔄 Re-populating interview data..."
 	@cd aws-setup && ./populate-data.sh $(CANDIDATE) $(INTERVIEW_ID)
+
+reset: ## ⚡ Quick reset environment without rebuilding infrastructure (1-2 min vs 20+ min)
+	@$(call check_candidate)
+	@echo "⚡ Quick resetting interview environment for: $(CANDIDATE)"
+	@echo "Interview ID: $(INTERVIEW_ID)"
+	@echo ""
+	@echo "⚡ This preserves infrastructure and only resets data (saves ~20 minutes)"
+	@echo ""
+	@cd aws-setup && ./reset-interview.sh $(CANDIDATE) $(INTERVIEW_ID)
+	@echo ""
+	@echo "🚀 Environment reset complete! Ready for next interview session."
 
 # =============================================================================
 # 3️⃣ GENERATE MATERIALS (Create everything needed to send to candidate)

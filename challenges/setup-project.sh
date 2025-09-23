@@ -29,6 +29,9 @@ cd buggy-assessment-api
 # Download main files
 echo -e "${BLUE}📥 Downloading project files...${NC}"
 
+echo "  → index.js"
+curl -s "$SAMPLE_DATA_URL?file=index.js" -o index.js
+
 echo "  → main.js"
 curl -s "$SAMPLE_DATA_URL?file=main.js" -o main.js
 
@@ -54,11 +57,14 @@ curl -s "$SAMPLE_DATA_URL?file=lib/metrics-collector.js" -o lib/metrics-collecto
 echo "  → lib/data-enricher.js"
 curl -s "$SAMPLE_DATA_URL?file=lib/data-enricher.js" -o lib/data-enricher.js
 
+echo "  → lib/validation-middleware.js"
+curl -s "$SAMPLE_DATA_URL?file=lib/validation-middleware.js" -o lib/validation-middleware.js
+
 # Verify all files downloaded successfully
 echo ""
 echo -e "${BLUE}✅ Verifying downloaded files...${NC}"
 
-EXPECTED_FILES=("main.js" "package.json" "README.md" "lib/request-processor.js" "lib/legacy-client.js" "lib/cache-manager.js" "lib/metrics-collector.js" "lib/data-enricher.js")
+EXPECTED_FILES=("index.js" "main.js" "package.json" "README.md" "lib/request-processor.js" "lib/legacy-client.js" "lib/cache-manager.js" "lib/metrics-collector.js" "lib/data-enricher.js" "lib/validation-middleware.js")
 MISSING_FILES=()
 
 for file in "${EXPECTED_FILES[@]}"; do
@@ -74,7 +80,7 @@ if [ ${#MISSING_FILES[@]} -eq 0 ]; then
     tree . 2>/dev/null || find . -type f | sort
     echo ""
     echo -e "${GREEN}🚀 Ready to debug! Start with: cat README.md${NC}"
-    echo -e "${BLUE}💡 Remember to look for memory leaks across all 6 modules${NC}"
+    echo -e "${BLUE}💡 Remember to look for memory leaks across all 6 lib modules${NC}"
 else
     echo -e "${RED}❌ Some files failed to download: ${MISSING_FILES[*]}${NC}"
     echo "Check your SAMPLE_DATA_URL and internet connection"

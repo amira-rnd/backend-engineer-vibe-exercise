@@ -22,11 +22,11 @@ make verify CANDIDATE=jane-smith    # Verify resources & sample data
 # 3️⃣ GENERATE MATERIALS (Send to candidate)
 make credentials CANDIDATE=jane-smith  # Generate email + zip challenges
 
-# 4️⃣ INTERVIEW SESSION (Optional testing)
-make test-candidate CANDIDATE=jane-smith  # Test candidate access
+# 4️⃣ INTERVIEW SESSION
+make reset CANDIDATE=next-candidate    # Quick reset between interviews (1-2 min)
 
 # 5️⃣ CLEANUP (After interview)
-make cleanup CANDIDATE=jane-smith   # Delete all AWS resources
+make cleanup CANDIDATE=jane-smith      # Delete all AWS resources
 ```
 
 ### **What Gets Automatically Created:**
@@ -76,23 +76,28 @@ backend-engineer-vibe-exercise/
 ├── README.md                       # This file
 ├── .gitignore                      # Prevents committing generated files
 │
-├── challenges/                     # 📚 Source of truth for all challenges
+├── challenges/                     # 📚 Challenge files for candidates
 │   ├── challenge-a-migration.md    # ⭐ Legacy data migration (15 min)
 │   ├── challenge-b-debugging.md    # ⭐ C++/.NET memory leak (15 min)
 │   ├── challenge-b-alternative.md  # ⭐ Node.js memory leak (15 min)
-│   └── challenge-c-optimization.md # ⚡ Performance optimization (15 min)
+│   ├── challenge-c-optimization.md # ⚡ Performance optimization (15 min)
+│   └── rapid-fire-tasks.md         # ⚡ Quick adaptation tasks (5-10 min)
+│
+├── interviewer-guide.md            # 📋 Complete interviewer reference + solutions
+├── comprehensive-scoring-rubric.md # 🎯 AI usage evaluation criteria
 │
 ├── aws-setup/                      # ☁️ AWS infrastructure & deployment
 │   ├── deploy-interview.sh         # Deploys CloudFormation + populates data
+│   ├── reset-interview.sh          # Quick reset between interviews (1-2 min)
 │   ├── verify-interview-environment.sh # Tests all resources
 │   ├── cleanup-interview.sh        # Removes all AWS resources
 │   └── interview-stack.yaml        # Complete infrastructure definition
 │
 ├── interviewee-collateral/         # 📧 Materials for candidates
 │   ├── candidate-prep.md           # Pre-interview setup (send 24hrs before)
-│   ├── generate-credentials-email.sh # Creates email + challenge zip
-│   └── send-to-candidate/          # 🤖 Auto-generated (email + challenges.zip)
+│   └── generate-credentials-email.sh # Creates email + challenge zip
 │
+├── post-interview/                 # 📊 Evaluation templates
 └── solutions/                      # 🔒 Reference solutions (DO NOT SHARE)
 ```
 
@@ -137,6 +142,13 @@ Transform legacy SQL data to DynamoDB, handling data quality issues.
 ### **🎯 60-Minute Prioritization:**
 - **MUST DO**: Setup (5) + Challenge A (15) + Challenge B (15) + Discussion (10) + Wrap-up (5) = 50 min
 - **IF TIME**: Challenge C (15 min) or Rapid Fire Tasks (5-10 min)
+
+### **⚡ Quick Reset Between Interviews:**
+For multiple interviews in one day, use `make reset CANDIDATE=next-name` instead of full rebuild:
+- **Time**: 1-2 minutes vs 20+ minutes
+- **Preserves**: All AWS infrastructure
+- **Resets**: All data, Lambda code, credentials
+- **Use when**: Same interviewer, same day, different candidates
 
 ### **📊 What to Observe:**
 1. **AI Interaction Style**: Do they prompt effectively or just copy/paste?
@@ -209,8 +221,9 @@ cd aws-setup && ./force-cleanup.sh candidate-name interview-id
 - Slack: #interview-support
 
 ### **For Interview Questions:**
-- Follow `interviewer-guide.md` for detailed session management
-- Use scoring rubrics in `comprehensive-scoring-rubric.md`
+- **Complete guidance**: `interviewer-guide.md` (session management, solutions, rapid fire)
+- **AI evaluation**: `comprehensive-scoring-rubric.md` (what to watch for, red flags)
+- **Quick reset**: `QUICK_RESET_GUIDE.md` (multiple interviews per day)
 
 ---
 
