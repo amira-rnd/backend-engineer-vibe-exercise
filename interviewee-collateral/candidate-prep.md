@@ -65,7 +65,7 @@ sudo apt install postgresql-client
 
 ### What We'll Provide
 
-- AWS sandbox environment credentials
+- AWS sandbox environment credentials (valid for 4 hours)
 - Sample database schemas and test data
 - API documentation
 - Challenge descriptions during the interview session

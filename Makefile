@@ -20,8 +20,8 @@ help: ## 📖 Show this help message
 	@echo "  └── make status         - Show AWS account info & existing interview stacks"
 	@echo ""
 	@echo "  2️⃣  DEPLOY ENVIRONMENT (Per interview - creates AWS infrastructure)"
-	@echo "  ├── make deploy         - Deploy CloudFormation stack with DynamoDB, Lambda, RDS, Redis"
-	@echo "  └── make verify         - Test all resources & populate sample data with bugs"
+	@echo "  ├── make deploy         - Deploy CloudFormation stack + auto-populate sample data"
+	@echo "  └── make verify         - Test all resources & confirm data populated correctly"
 	@echo ""
 	@echo "  3️⃣  GENERATE MATERIALS (Send to candidate)"
 	@echo "  └── make credentials    - 🧹 Clean + 📧 generate email + 📦 zip challenges"
@@ -31,13 +31,15 @@ help: ## 📖 Show this help message
 	@echo ""
 	@echo "  5️⃣  CLEANUP (After interview)"
 	@echo "  ├── make clean          - 🧹 Remove local generated files (send-to-candidate/)"
-	@echo "  └── make cleanup        - 🗑️  DELETE all AWS resources to stop billing"
+	@echo "  ├── make cleanup        - 🗑️  DELETE all AWS resources to stop billing"
+	@echo "  └── make force-cleanup  - 🚨 EMERGENCY: Force delete stuck CloudFormation stacks"
 	@echo ""
 	@echo "💡 EXAMPLES:"
 	@echo "  make prep-email                              # Show prep file location"
 	@echo "  make deploy CANDIDATE=john-doe"
 	@echo "  make credentials CANDIDATE=john-doe          # Auto-cleans first"
 	@echo "  make cleanup CANDIDATE=john-doe"
+	@echo "  make force-cleanup CANDIDATE=john-doe        # Only if normal cleanup fails"
 	@echo ""
 	@echo "📋 VARIABLES:"
 	@echo "  CANDIDATE     - Required for deploy/credentials (e.g., john-doe)"
@@ -83,7 +85,7 @@ setup: ## 🔧 Check required tools & validate AWS credentials
 status: ## 📊 Check current AWS account and region
 	@echo "📊 Current AWS Status:"
 	@echo "======================"
-	@cd aws-setup && aws sts get-caller-identity --profile $(AWS_PROFILE) --output table
+	@cd aws-setup && aws sts get-caller-identity --profile $(AWS_PROFILE) --output table --no-cli-pager
 	@echo ""
 	@echo "Default Region: $(shell cd aws-setup && aws configure get region --profile $(AWS_PROFILE) || echo 'us-east-1')"
 	@echo ""
@@ -93,7 +95,8 @@ status: ## 📊 Check current AWS account and region
 		--region us-east-1 \
 		--stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
 		--query "StackSummaries[?contains(StackName, 'amira-interview')].{Name:StackName,Status:StackStatus,Created:CreationTime}" \
-		--output table || echo "No interview stacks found."
+		--output table \
+		--no-cli-pager || echo "No interview stacks found."
 	@echo ""
 	@echo "📋 Variables to use for existing stacks:"
 	@cd aws-setup && aws cloudformation list-stacks \
@@ -101,7 +104,8 @@ status: ## 📊 Check current AWS account and region
 		--region us-east-1 \
 		--stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
 		--query "StackSummaries[?contains(StackName, 'amira-interview')].StackName" \
-		--output text | sed 's/amira-interview-//g' | sed 's/\([^-]*\)-\(.*\)/CANDIDATE=\1 INTERVIEW_ID=\2/' || echo "💡 To deploy a new environment: make deploy CANDIDATE=test-candidate"
+		--output text \
+		--no-cli-pager | sed 's/amira-interview-//g' | sed 's/\([^-]*\)-\(.*\)/CANDIDATE=\1 INTERVIEW_ID=\2/' || echo "💡 To deploy a new environment: make deploy CANDIDATE=test-candidate"
 
 # =============================================================================
 # 2️⃣ DEPLOY ENVIRONMENT (Creates AWS infrastructure for one interview)
@@ -114,8 +118,10 @@ deploy: ## 🚀 Create complete AWS environment with buggy code & sample data
 	@echo "Interview ID: $(INTERVIEW_ID)"
 	@cd aws-setup && echo "1" | ./deploy-interview.sh $(CANDIDATE) $(INTERVIEW_ID)
 	@echo "📁 Uploading challenge files to S3..."
-	@cd aws-setup && ./sync-challenges.sh $(CANDIDATE)-$(INTERVIEW_ID)
-	@echo "✅ Environment deployed successfully!"
+	@cd aws-setup && ./sync-challenges.sh $(INTERVIEW_ID)
+	@echo "🔄 Populating sample data..."
+	@cd aws-setup && ./populate-data.sh $(CANDIDATE) $(INTERVIEW_ID)
+	@echo "✅ Environment deployed and data populated successfully!"
 	@echo ""
 	@echo "📋 Next steps:"
 	@echo "  1. make verify CANDIDATE=$(CANDIDATE) INTERVIEW_ID=$(INTERVIEW_ID)"
@@ -171,6 +177,27 @@ cleanup: ## 🗑️ DELETE all AWS resources (CloudFormation stack, DynamoDB, RD
 		cd aws-setup && ./cleanup-interview.sh $(INTERVIEW_ID); \
 	fi
 	@echo "✅ Cleanup complete!"
+
+force-cleanup: ## 🚨 EMERGENCY: Force delete stuck CloudFormation stacks and orphaned resources
+	@echo "🚨 EMERGENCY FORCE CLEANUP"
+	@echo "⚠️  Use ONLY when normal cleanup fails!"
+	@echo "⚠️  This will forcefully delete AWS resources!"
+	@echo ""
+	@if [ -z "$(INTERVIEW_ID)" ] && [ -z "$(CANDIDATE)" ]; then \
+		echo "❌ Must specify either INTERVIEW_ID or CANDIDATE"; \
+		echo "Examples:"; \
+		echo "  make force-cleanup CANDIDATE=john-doe"; \
+		echo "  make force-cleanup CANDIDATE=john-doe INTERVIEW_ID=20241216-1400"; \
+		exit 1; \
+	fi
+	@if [ -n "$(CANDIDATE)" ]; then \
+		echo "Force cleaning: $(CANDIDATE) ($(INTERVIEW_ID))"; \
+		cd aws-setup && ./force-cleanup.sh $(CANDIDATE) $(INTERVIEW_ID); \
+	else \
+		echo "❌ CANDIDATE name is required for force cleanup"; \
+		exit 1; \
+	fi
+	@echo "✅ Force cleanup complete!"
 
 clean: ## 🧹 Remove local generated files (send-to-candidate directory)
 	@echo "🧹 Cleaning local generated files..."

@@ -177,6 +177,22 @@ Transform legacy SQL data to DynamoDB, handling data quality issues.
 - **ElastiCache Redis**: Available for Lambda functions
 - **VPC + Security Groups**: Proper network isolation
 
+### **⚠️ Troubleshooting:**
+
+**If CloudFormation stack gets stuck in DELETE_FAILED:**
+```bash
+# Emergency force cleanup (use only when normal cleanup fails)
+make force-cleanup CANDIDATE=candidate-name
+
+# Or directly:
+cd aws-setup && ./force-cleanup.sh candidate-name interview-id
+```
+
+**Common issues:**
+- **S3 buckets not empty**: Force cleanup script empties buckets before deletion
+- **VPC deletion timeout**: Script proactively detaches Internet Gateway
+- **Resource dependencies**: Script deletes resources in proper order
+
 ### **Costs:**
 - **ElastiCache**: ~$0.02/hour
 - **RDS**: Free tier eligible

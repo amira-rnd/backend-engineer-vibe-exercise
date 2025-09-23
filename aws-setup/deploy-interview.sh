@@ -39,6 +39,83 @@ if [ $? -ne 0 ]; then
 fi
 echo -e "${GREEN}✅ AWS credentials validated${NC}"
 
+# Pre-flight checks
+echo -e "${BLUE}Running pre-flight checks...${NC}"
+
+# Check AWS CLI version
+AWS_CLI_VERSION=$(aws --version 2>&1 | cut -d/ -f2 | cut -d' ' -f1)
+echo "AWS CLI Version: $AWS_CLI_VERSION"
+
+# Check available disk space
+AVAILABLE_SPACE=$(df -h . | awk 'NR==2 {print $4}')
+echo "Available disk space: $AVAILABLE_SPACE"
+
+# Check for existing resources that might conflict
+echo -e "${BLUE}Checking for resource name conflicts...${NC}"
+
+# Check for existing S3 buckets
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --profile personal --query 'Account' --output text)
+CHALLENGE_BUCKET="${AWS_ACCOUNT_ID}-challenges"
+DEPLOYMENT_BUCKET="${AWS_ACCOUNT_ID}-deployment"
+
+if aws s3api head-bucket --bucket "$CHALLENGE_BUCKET" --profile personal --region "$REGION" 2>/dev/null; then
+    echo -e "${YELLOW}⚠️  S3 bucket '$CHALLENGE_BUCKET' already exists${NC}"
+    echo "This may indicate a previous deployment wasn't cleaned up properly"
+    read -p "Continue anyway? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Deployment cancelled"
+        exit 1
+    fi
+fi
+
+# Check for stuck stacks in DELETE_FAILED state
+echo -e "${BLUE}Checking for stuck CloudFormation stacks...${NC}"
+STUCK_STACKS=$(aws cloudformation list-stacks \
+    --profile personal \
+    --region "$REGION" \
+    --stack-status-filter DELETE_FAILED \
+    --query "StackSummaries[?contains(StackName, 'amira-interview')].StackName" \
+    --output text 2>/dev/null || echo "")
+
+if [ "$STUCK_STACKS" != "" ]; then
+    echo -e "${YELLOW}⚠️  Found stuck CloudFormation stacks in DELETE_FAILED state:${NC}"
+    echo "$STUCK_STACKS"
+    echo ""
+    echo -e "${BLUE}💡 To clean up stuck stacks, run:${NC}"
+    echo "  ./force-cleanup.sh <candidate-name> <interview-id>"
+    echo ""
+    echo -e "${BLUE}ℹ️  Continuing with deployment (different stack name)...${NC}"
+fi
+
+# Check AWS service limits
+echo -e "${BLUE}Checking AWS service quotas...${NC}"
+
+# Check VPC limit
+VPC_COUNT=$(aws ec2 describe-vpcs --profile personal --region "$REGION" --query 'length(Vpcs)' --output text 2>/dev/null || echo "0")
+echo "Current VPCs in region: $VPC_COUNT (limit usually 5)"
+
+# Check RDS instances
+RDS_COUNT=$(aws rds describe-db-instances --profile personal --region "$REGION" --query 'length(DBInstances)' --output text 2>/dev/null || echo "0")
+echo "Current RDS instances in region: $RDS_COUNT"
+
+# Validate template before deployment
+echo -e "${BLUE}Validating CloudFormation template...${NC}"
+aws cloudformation validate-template \
+    --template-body file://interview-stack.yaml \
+    --profile personal \
+    --region "$REGION" > /dev/null
+
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✅ CloudFormation template is valid${NC}"
+else
+    echo -e "${RED}❌ CloudFormation template validation failed${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ Pre-flight checks completed${NC}"
+echo ""
+
 # Check if stack already exists
 echo -e "${BLUE}Checking for existing stack...${NC}"
 if aws cloudformation describe-stacks --stack-name "$STACK_NAME" --profile personal --region "$REGION" >/dev/null 2>&1; then
@@ -84,14 +161,13 @@ echo -e "${BLUE}Packaging Lambda functions...${NC}"
 ./package-lambda.sh
 
 # Create temporary deployment bucket for Lambda upload (CloudFormation will create the official one)
-TEMP_DEPLOYMENT_BUCKET="${INTERVIEW_ID}-temp-deployment-$(date +%s)"
-DEPLOYMENT_BUCKET="${INTERVIEW_ID}-deployment"
+TEMP_DEPLOYMENT_BUCKET="${AWS_ACCOUNT_ID}-temp-deployment-$(date +%s)"
 echo -e "${BLUE}Creating temporary deployment bucket...${NC}"
 aws s3 mb "s3://$TEMP_DEPLOYMENT_BUCKET" --region "$REGION" --profile personal
 
 # Upload packaged Lambda to temp bucket
 echo -e "${BLUE}Uploading Lambda package to temporary S3 bucket...${NC}"
-aws s3 cp packaged-lambdas/sample-data-api.zip "s3://$TEMP_DEPLOYMENT_BUCKET/$INTERVIEW_ID/sample-data-api.zip" --profile personal --region "$REGION"
+aws s3 cp packaged-lambdas/sample-data-api.zip "s3://$TEMP_DEPLOYMENT_BUCKET/${INTERVIEW_ID}/sample-data-api.zip" --profile personal --region "$REGION"
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✅ Lambda package uploaded successfully${NC}"
@@ -139,7 +215,7 @@ SAMPLE_DATA_API_URL=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="SampleD
 # Wait for RDS to be available (with extended timeout)
 echo -e "${BLUE}Waiting for RDS instance to be available...${NC}"
 echo -e "${BLUE}⏱️  This can take 10-15 minutes for new RDS instances${NC}"
-DB_INSTANCE_ID="db-${INTERVIEW_ID}-performance"
+DB_INSTANCE_ID="interview-db-performance"
 aws rds wait db-instance-available \
     --db-instance-identifier "$DB_INSTANCE_ID" \
     --profile personal \
@@ -431,7 +507,8 @@ aws configure set region $REGION
 aws sts assume-role \\
   --role-arn $CANDIDATE_ROLE \\
   --role-session-name interview-session \\
-  --external-id ${INTERVIEW_ID}-${CANDIDATE_NAME}
+  --external-id ${INTERVIEW_ID}-${CANDIDATE_NAME} \\
+  --duration-seconds 14400
 
 ## AWS SDK Setup (for candidate code)
 Role ARN: $CANDIDATE_ROLE

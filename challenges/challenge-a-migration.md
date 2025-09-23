@@ -6,10 +6,24 @@
 
 Amira is migrating student assessment data from a legacy SQL Server system to our new AWS-based architecture. The legacy system has data quality issues and uses different schemas than our current system.
 
+### Getting the Legacy Data
+
+Download the sample legacy data files (exports from the SQL Server database):
+
+```bash
+# Download legacy student data
+curl "$SAMPLE_DATA_URL?file=legacy-students.csv" -o legacy-students.csv
+
+# Download legacy assessment data
+curl "$SAMPLE_DATA_URL?file=legacy-assessments.csv" -o legacy-assessments.csv
+```
+
+**These CSV files contain actual exported data from the legacy SQL Server system** with all the data quality issues described below. Use these files as your data source for migration.
+
 ### Your Task
 
 Create a migration script that:
-1. Reads from the legacy database structure
+1. Reads from the legacy CSV files (legacy-students.csv and legacy-assessments.csv)
 2. Transforms the data to match our new schema
 3. Handles data quality issues gracefully
 4. Writes to DynamoDB in batches
@@ -44,31 +58,28 @@ CREATE TABLE Assessments (
 ### Target DynamoDB Schema
 
 ```javascript
-// Student Record
+// Table: interview-students
 {
-  "PK": "STUDENT#<uuid>",
-  "SK": "PROFILE",
-  "firstName": "string",
-  "lastName": "string", 
-  "grade": number,  // Must be 0-12
-  "schoolId": "SCHOOL#<uuid>",
-  "createdAt": "ISO-8601",
+  "student_id": "uuid",  // Primary Key
+  "class_id": "uuid",
+  "first_name": "string",
+  "last_name": "string",
+  "grade_level": number,  // Must be 0-12
+  "reading_level": number,  // Must be 0.0-12.0
   "status": "ACTIVE|INACTIVE",
-  "readingLevel": number,  // Must be 0.0-12.0
-  "entityType": "STUDENT"
+  "created_at": "ISO-8601"
 }
 
-// Assessment Record
+// Table: interview-assessments
 {
-  "PK": "STUDENT#<uuid>",
-  "SK": "ASSESSMENT#<timestamp>",
-  "assessmentId": "string",
+  "assessment_id": "uuid",  // Primary Key
+  "student_id": "uuid",
   "type": "BENCHMARK|PROGRESS_MONITORING|INSTRUCT",
   "score": number,
-  "completedAt": "ISO-8601",
-  "teacherNotes": "string",
-  "status": "COMPLETED|PROCESSING|ERROR",
-  "entityType": "ASSESSMENT"
+  "window_tag": "BOY|MOY|EOY",
+  "created_at": "ISO-8601",
+  "teacher_notes": "string",
+  "status": "COMPLETED|PROCESSING|ERROR"
 }
 ```
 
@@ -82,10 +93,11 @@ CREATE TABLE Assessments (
 
 ### Requirements
 
+- Write to DynamoDB tables: `interview-students` and `interview-assessments`
 - Use BatchWriteItem for efficiency (25 items max per batch)
 - Implement retry logic with exponential backoff
 - Log all data quality issues for review
-- Generate new UUIDs for the DynamoDB PKs
+- Generate new UUIDs for primary keys
 - Maintain a mapping of old IDs to new IDs
 
 ### Sample Data Issues
@@ -108,39 +120,3 @@ CREATE TABLE Assessments (
 }
 ```
 
-### Evaluation Criteria
-
-**Excellent (5/5):**
-- Handles critical data quality issues (grade, reading level)
-- Implements batch processing
-- Basic error handling
-- Efficient AI usage for boilerplate
-
-**Good (4/5):**
-- Handles most data quality issues
-- Basic batch processing works
-- Some error handling
-
-**Acceptable (3/5):**
-- Basic migration works
-- Handles some edge cases
-- Gets data moving
-
-**Below Expectations (<3/5):**
-- Doesn't handle critical data issues
-- No batch processing
-- Major bugs
-
-### Hints
-
-After 5 minutes:
-- "Focus on grade normalization first"
-- "Don't worry about perfect retry logic"
-- "BatchWriteItem has a 25 item limit"
-
-### Discussion Questions
-
-1. How would you handle this at scale (millions of records)?
-2. What monitoring would you add?
-3. How would you validate the migration was successful?
-4. What would you do differently if this was a live migration?

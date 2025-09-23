@@ -70,6 +70,24 @@ cat CONTEXT-FOR-CLAUDE-CODE.md
 cat comprehensive-scoring-rubric.md
 ```
 
+### AWS Environment Management
+```bash
+# Deploy interview environment
+make deploy CANDIDATE=candidate-name
+
+# Verify environment is working
+make verify CANDIDATE=candidate-name
+
+# Generate credentials for candidate
+make credentials CANDIDATE=candidate-name
+
+# Normal cleanup after interview
+make cleanup CANDIDATE=candidate-name
+
+# Emergency cleanup for stuck CloudFormation stacks
+cd aws-setup && ./force-cleanup.sh candidate-name interview-id
+```
+
 ### Document Generation
 When creating new challenges or improvements:
 - Follow the markdown pattern in `challenges/` directory

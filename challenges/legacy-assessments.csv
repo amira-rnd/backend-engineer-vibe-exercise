@@ -1,0 +1,41 @@
+AssessmentID,StudentID,AssessmentType,Score,DateTaken,TeacherNotes,ProcessingStatus
+201,101,DIBELS,85.5,2023-09-01 10:30:00,Student showed improvement in phonemic awareness,COMPLETED
+202,102,PROGRESS,92.0,2023-09-02 11:15:00,Excellent reading fluency,
+203,103,BENCHMARK,78.2,2023-09-03 09:45:00,Needs support with comprehension,COMPLETED
+204,999,DIBELS,88.0,2023-09-04 14:20:00,Student ID not found in system,COMPLETED
+205,105,PROGRESS,73.5,2023-09-05 10:00:00,,PROCESSING
+206,106,BENCHMARK,65.8,2026-01-15 09:30:00,Future date error,COMPLETED
+207,107,DIBELS,91.2,2023-09-07 11:45:00,Strong performance across all areas,COMPLETED
+208,108,PROGRESS,45.3,2023-09-08 13:30:00,Beginning reader making good progress,
+209,109,BENCHMARK,82.7,2023-09-09 10:15:00,Reading at grade level,COMPLETED
+210,110,DIBELS,77.4,2023-09-10 14:00:00,Improving letter recognition,PROCESSING
+211,111,PROGRESS,89.1,2023-09-11 09:20:00,Advanced reader,COMPLETED
+212,888,BENCHMARK,76.5,2023-09-12 12:30:00,Another orphaned assessment,COMPLETED
+213,113,DIBELS,52.3,2023-09-13 11:00:00,Struggling with phonics,
+214,114,PROGRESS,68.9,2023-09-14 15:15:00,Needs additional support,COMPLETED
+215,115,BENCHMARK,0.0,2023-09-15 10:45:00,Student was absent for assessment,ERROR
+216,116,DIBELS,93.8,2023-09-16 09:30:00,Exceptional performance,COMPLETED
+217,117,PROGRESS,71.2,2023-09-17 13:45:00,Making steady progress,PROCESSING
+218,777,BENCHMARK,84.6,2025-12-31 16:00:00,Another future date and orphaned record,COMPLETED
+219,119,DIBELS,59.7,2023-09-19 11:30:00,Working on sight words,
+220,120,PROGRESS,86.3,2023-09-20 14:20:00,Reading above grade level,COMPLETED
+221,121,BENCHMARK,79.8,2023-09-21 10:00:00,Consistent performance,COMPLETED
+222,122,DIBELS,48.5,2023-09-22 12:15:00,Early literacy development,PROCESSING
+223,123,PROGRESS,91.7,2023-09-23 09:45:00,Strong reading skills,COMPLETED
+224,124,BENCHMARK,63.4,2023-09-24 11:20:00,Needs comprehension support,
+225,125,DIBELS,87.9,2023-09-25 13:50:00,Good progress in fluency,COMPLETED
+226,126,PROGRESS,75.1,2023-09-26 10:30:00,Steady improvement,PROCESSING
+227,555,BENCHMARK,82.3,2023-09-27 14:40:00,Orphaned assessment record,COMPLETED
+228,128,DIBELS,94.2,2023-09-28 09:15:00,Excellent across all measures,
+229,129,PROGRESS,69.8,2023-09-29 12:00:00,Making good progress,COMPLETED
+230,130,BENCHMARK,41.5,2023-09-30 15:30:00,Significant support needed,ERROR
+231,131,DIBELS,88.6,2023-10-01 10:45:00,Strong phonemic awareness,COMPLETED
+232,132,PROGRESS,76.2,2023-10-02 11:30:00,Reading comprehension improving,
+233,133,BENCHMARK,83.1,2024-08-15 09:00:00,Future date in past system,COMPLETED
+234,134,DIBELS,55.9,2023-10-04 13:15:00,Working on letter sounds,PROCESSING
+235,135,PROGRESS,92.5,2023-10-05 14:45:00,Advanced reading level,COMPLETED
+236,136,BENCHMARK,74.7,2023-10-06 10:20:00,Meeting grade level expectations,
+237,666,DIBELS,80.4,2023-10-07 12:45:00,Another missing student record,COMPLETED
+238,138,PROGRESS,67.3,2023-10-08 11:15:00,Needs fluency practice,PROCESSING
+239,139,BENCHMARK,89.9,2023-10-09 09:30:00,Excellent comprehension skills,COMPLETED
+240,140,DIBELS,72.8,2023-10-10 14:10:00,Good overall progress,

@@ -9,6 +9,13 @@ DISTRICT > SCHOOL > CLASS > STUDENT
 
 The system is taking 30+ seconds for large districts. We need to optimize both the database queries and the application logic.
 
+### Database Connection Details
+
+**PostgreSQL Endpoint:** `interview-db-performance.[region].rds.amazonaws.com`
+**Username:** `postgres`
+**Password:** (see credentials email)
+**Database:** `postgres`
+
 ### Current Implementation
 
 ```sql
@@ -92,12 +99,13 @@ async function resolveConflicts(districtId, windowTag) {
 }
 ```
 
-### Performance Issues
+### Observed Symptoms
 
-1. **Database**: Recursive CTE is inefficient for large hierarchies
-2. **Memory**: Loading all data at once causes memory pressure
-3. **CPU**: O(n²) complexity in conflict resolution
-4. **No caching**: Same data fetched repeatedly
+- **Query execution**: 30-45 seconds for large districts
+- **Memory usage**: Spikes to 8GB during processing
+- **CPU utilization**: Sustained 100% for entire duration
+- **Database connections**: Frequent timeouts under load
+- **User experience**: UI freezes, timeouts on API calls
 
 ### Sample Data Scale
 
@@ -109,42 +117,9 @@ async function resolveConflicts(districtId, windowTag) {
 
 ### Your Task
 
-1. **Optimize the SQL query** (consider alternatives to recursive CTE)
-2. **Implement streaming/pagination** to reduce memory usage
-3. **Add caching strategy** for hierarchical data
-4. **Optimize the conflict resolution algorithm**
-5. **Consider moving some logic to the database**
+1. **Identify and fix database bottlenecks**
+2. **Reduce memory consumption during processing**
+3. **Improve response time to <3 seconds**
+4. **Ensure solution scales to millions of students**
+5. **Optimize the conflict resolution logic**
 
-### Evaluation Criteria
-
-**Excellent (5/5):**
-- Eliminates recursive CTE 
-- Implements streaming/batching
-- Adds Redis/ElastiCache layer
-- Reduces complexity to O(n log n)
-- Uses database functions for rules
-
-**Good (4/5):**
-- Improves query performance
-- Implements basic batching
-- Adds some caching
-- Shows clear optimization strategy
-
-**Acceptable (3/5):**
-- Identifies main bottlenecks
-- Makes some improvements
-- Basic understanding of issues
-
-### Hints (if needed)
-
-- "Could you denormalize the hierarchy?"
-- "What if you pre-computed the conflicts?"
-- "Consider using window functions"
-- "Think about materialized views"
-
-### Discussion Questions
-
-1. How would you roll this out safely?
-2. What metrics would you monitor?
-3. Trade-offs between complexity and performance?
-4. How would you handle cache invalidation?

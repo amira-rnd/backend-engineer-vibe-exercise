@@ -145,7 +145,18 @@ Example Response:
                     'challenge-b-debugging.md',
                     'challenge-b-alternative.md',
                     'challenge-c-optimization.md',
-                    'rapid-fire-tasks.md'
+                    'rapid-fire-tasks.md',
+                    'legacy-students.csv',
+                    'legacy-assessments.csv',
+                    'setup-project.sh',
+                    'main.js',
+                    'package.json',
+                    'README.md',
+                    'lib/request-processor.js',
+                    'lib/legacy-client.js',
+                    'lib/cache-manager.js',
+                    'lib/metrics-collector.js',
+                    'lib/data-enricher.js'
                 ],
                 usage: 'Add ?file=filename to URL',
                 example: 'curl "$SAMPLE_DATA_URL?file=challenge-a-migration.md"'
@@ -190,7 +201,18 @@ Example Response:
                         'challenge-b-debugging.md',
                         'challenge-b-alternative.md',
                         'challenge-c-optimization.md',
-                        'rapid-fire-tasks.md'
+                        'rapid-fire-tasks.md',
+                        'legacy-students.csv',
+                        'legacy-assessments.csv',
+                        'setup-project.sh',
+                        'main.js',
+                        'package.json',
+                        'README.md',
+                        'lib/request-processor.js',
+                        'lib/legacy-client.js',
+                        'lib/cache-manager.js',
+                        'lib/metrics-collector.js',
+                        'lib/data-enricher.js'
                     ]),
                     note: 'Challenge files are served from S3. If missing, run: aws-setup/sync-challenges.sh <interview-id>'
                 })

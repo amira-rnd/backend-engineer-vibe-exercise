@@ -58,7 +58,7 @@ echo ""
 
 # Wait for RDS to be available (with extended timeout)
 echo -e "${BLUE}Checking RDS availability...${NC}"
-DB_INSTANCE_ID="db-${INTERVIEW_ID}-performance"
+DB_INSTANCE_ID="interview-db-performance"
 aws rds wait db-instance-available \
     --db-instance-identifier "$DB_INSTANCE_ID" \
     --profile personal \
@@ -245,41 +245,76 @@ dynamodb = session.resource('dynamodb')
 # Sample data for students table
 students_table = dynamodb.Table('$STUDENTS_TABLE')
 
+# Get stack outputs to find assessments table name
+cf_session = boto3.Session(profile_name='personal', region_name='$REGION')
+cf_client = cf_session.client('cloudformation')
+stack_outputs = cf_client.describe_stacks(StackName='$STACK_NAME')['Stacks'][0]['Outputs']
+assessments_table_name = next(
+    output['OutputValue'] for output in stack_outputs
+    if output['OutputKey'] == 'AssessmentsTableName'
+)
+assessments_table = dynamodb.Table(assessments_table_name)
+
+# Create minimal clean reference data for testing (Challenge A starts with clean tables)
+# Note: The dirty data is in the CSV files, candidates will migrate CSV -> DynamoDB
+
+reference_student_id = str(uuid.uuid4())
+reference_class_id = str(uuid.uuid4())
+
 sample_students = [
     {
-        'student_id': str(uuid.uuid4()),
-        'class_id': 'class-001',
-        'first_name': 'Alice',
-        'last_name': 'Johnson',
+        'student_id': reference_student_id,
+        'class_id': reference_class_id,
+        'first_name': 'Test',
+        'last_name': 'Student',
         'grade_level': 3,
-        'reading_level': Decimal('3.2'),
-        'status': 'ACTIVE'
-    },
+        'reading_level': Decimal('3.0'),  # Clean data only
+        'status': 'ACTIVE',
+        'created_at': datetime.utcnow().isoformat()
+    }
+]
+
+# One clean reference assessment
+sample_assessments = [
     {
-        'student_id': str(uuid.uuid4()),
-        'class_id': 'class-001',
-        'first_name': 'Bob',
-        'last_name': 'Smith',
-        'grade_level': 3,
-        'reading_level': Decimal('-1.0'),  # Intentional bad data for Challenge A
-        'status': 'ACTIVE'
-    },
-    {
-        'student_id': str(uuid.uuid4()),
-        'class_id': 'class-002',
-        'first_name': 'Charlie',
-        'last_name': 'Brown',
-        'grade_level': 4,
-        'reading_level': Decimal('4.5'),
-        'status': 'ACTIVE'
+        'assessment_id': str(uuid.uuid4()),
+        'student_id': reference_student_id,
+        'type': 'BENCHMARK',
+        'window_tag': 'BOY',
+        'score': Decimal('85.0'),  # Clean data only
+        'reading_level': Decimal('3.0'),
+        'created_at': datetime.utcnow().isoformat()
     }
 ]
 
 try:
+    # Clear existing data from tables (scan and delete all items)
+    print("Clearing existing DynamoDB data...")
+
+    # Clear students table
+    students_response = students_table.scan()
+    with students_table.batch_writer() as batch:
+        for item in students_response['Items']:
+            batch.delete_item(Key={'student_id': item['student_id']})
+
+    # Clear assessments table
+    assessments_response = assessments_table.scan()
+    with assessments_table.batch_writer() as batch:
+        for item in assessments_response['Items']:
+            batch.delete_item(Key={'assessment_id': item['assessment_id']})
+
+    # Populate students table with clean reference data
     with students_table.batch_writer() as batch:
         for student in sample_students:
             batch.put_item(Item=student)
-    print("✅ Sample data populated successfully")
+
+    # Populate assessments table with clean reference data
+    with assessments_table.batch_writer() as batch:
+        for assessment in sample_assessments:
+            batch.put_item(Item=assessment)
+
+    print(f"✅ Clean reference data populated: {len(sample_students)} students, {len(sample_assessments)} assessments")
+    print("📋 Note: Dirty data is in CSV files for Challenge A migration task")
 except Exception as e:
     print(f"❌ Error populating sample data: {e}")
     import sys
@@ -294,12 +329,17 @@ fi
 
 # Verify DynamoDB data
 echo -e "${BLUE}Verifying DynamoDB data...${NC}"
-DYNAMO_COUNT=$(aws dynamodb scan --table-name "$STUDENTS_TABLE" --select "COUNT" --profile personal --region "$REGION" --output text --query 'Count' 2>/dev/null)
+DYNAMO_STUDENTS_COUNT=$(aws dynamodb scan --table-name "$STUDENTS_TABLE" --select "COUNT" --profile personal --region "$REGION" --output text --query 'Count' 2>/dev/null)
 
-if [ "$DYNAMO_COUNT" -gt 0 ]; then
-    echo -e "${GREEN}✅ DynamoDB populated successfully: $DYNAMO_COUNT student records${NC}"
+# Get assessments table name from CloudFormation outputs
+ASSESSMENTS_TABLE=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="AssessmentsTableName") | .OutputValue')
+DYNAMO_ASSESSMENTS_COUNT=$(aws dynamodb scan --table-name "$ASSESSMENTS_TABLE" --select "COUNT" --profile personal --region "$REGION" --output text --query 'Count' 2>/dev/null)
+
+if [ "$DYNAMO_STUDENTS_COUNT" -ge 0 ] && [ "$DYNAMO_ASSESSMENTS_COUNT" -ge 0 ]; then
+    echo -e "${GREEN}✅ DynamoDB setup completed: $DYNAMO_STUDENTS_COUNT students, $DYNAMO_ASSESSMENTS_COUNT assessments (clean reference data)${NC}"
+    echo -e "${BLUE}📋 Note: Challenge A will migrate dirty data from CSV files to these clean DynamoDB tables${NC}"
 else
-    echo -e "${RED}❌ DynamoDB verification failed: $DYNAMO_COUNT student records${NC}"
+    echo -e "${RED}❌ DynamoDB verification failed: $DYNAMO_STUDENTS_COUNT students, $DYNAMO_ASSESSMENTS_COUNT assessments${NC}"
     exit 1
 fi
 
@@ -308,7 +348,7 @@ echo -e "${GREEN}🎉 Data population completed successfully!${NC}"
 echo ""
 echo -e "${BLUE}📋 Data Summary:${NC}"
 echo "PostgreSQL: $STUDENT_COUNT students, $ASSESSMENT_COUNT assessments"
-echo "DynamoDB: $DYNAMO_COUNT student records"
+echo "DynamoDB: $DYNAMO_STUDENTS_COUNT students, $DYNAMO_ASSESSMENTS_COUNT assessments"
 echo ""
 echo -e "${BLUE}💡 Next steps:${NC}"
 echo "1. Run verification: ./verify-interview-environment.sh $CANDIDATE_NAME $INTERVIEW_ID"

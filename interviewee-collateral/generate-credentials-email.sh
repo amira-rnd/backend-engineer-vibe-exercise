@@ -75,12 +75,12 @@ LAMBDA_NAME=$(echo "$LAMBDA_ARN" | cut -d':' -f7)
 
 echo -e "${BLUE}Generating temporary credentials for candidate...${NC}"
 
-# Assume role to get temporary credentials for candidate (4 hour duration)
+# Assume role to get temporary credentials for candidate (12 hour duration - AWS maximum)
 ROLE_RESPONSE=$(aws sts assume-role \
     --role-arn "$CANDIDATE_ROLE" \
     --role-session-name "interview-${CANDIDATE_NAME}" \
     --external-id "${INTERVIEW_ID}-${CANDIDATE_NAME}" \
-    --duration-seconds 14400 \
+    --duration-seconds 43200 \
     --profile personal \
     --region "$REGION" \
     --output json)
@@ -192,6 +192,9 @@ Hi $CANDIDATE_NAME,
 
 Here are your AWS credentials for the upcoming interview session. Please set these up now and test your access.
 
+⏰ **IMPORTANT**: These credentials are valid for 4 hours from generation time.
+🔄 **If expired**: Contact your interviewer for fresh credentials.
+
 === AWS SETUP INSTRUCTIONS ===
 
 1. SET THESE CREDENTIALS:
@@ -223,21 +226,21 @@ You should see your assumed role in the response.
 === AVAILABLE RESOURCES ===
 
 DynamoDB Tables:
-- Students: $STUDENTS_TABLE
-- Assessments: $ASSESSMENTS_TABLE
-- Classes: $CLASSES_TABLE
-- Schools: $SCHOOLS_TABLE
+- Students: interview-students
+- Assessments: interview-assessments
+- Classes: interview-classes
+- Schools: interview-schools
 
-Lambda Function: $LAMBDA_NAME
+Lambda Function: interview-buggy-api
 
 Sample Data & Schema API: $SAMPLE_DATA_URL
 - Access with: curl "$SAMPLE_DATA_URL?file=schemas.sql"
-- Available files: schemas.sql, test-data.json, legacy-api-docs.md
+- Available files: schemas.sql, test-data.json, legacy-api-docs.md, challenge files
 
 Database Connection:
-- Host: $DB_ENDPOINT
+- Host: interview-db-performance.[region].rds.amazonaws.com
 - User: postgres
-- Password: $DB_PASSWORD
+- Password: [generated password]
 - Database: postgres
 
 Redis Cache: $REDIS_ENDPOINT (VPC-internal only, accessible from Lambda functions)
@@ -310,7 +313,7 @@ Interview Stack: $STACK_NAME
 === PRE-VALIDATED CONNECTION TESTS ===
 
 These connections have been tested and verified by the interviewer:
-$VALIDATION_REPORT
+$(echo -e "$VALIDATION_REPORT")
 
 All systems are ready for your interview session!
 EOF
@@ -334,12 +337,12 @@ echo -e "${GREEN}🔗 CHALLENGE URLs FOR INTERVIEWER (save these for interview):
 echo ""
 echo "Base API: $SAMPLE_DATA_URL"
 echo ""
-echo "📋 Copy/paste these during interview:"
-echo "Challenge A: curl \"$SAMPLE_DATA_URL?file=challenge-a-migration.md\""
-echo "Challenge B (C++/.NET): curl \"$SAMPLE_DATA_URL?file=challenge-b-debugging.md\""
-echo "Challenge B (Alternative): curl \"$SAMPLE_DATA_URL?file=challenge-b-alternative.md\""
-echo "Challenge C: curl \"$SAMPLE_DATA_URL?file=challenge-c-optimization.md\""
-echo "Rapid Fire: curl \"$SAMPLE_DATA_URL?file=rapid-fire-tasks.md\""
+echo "📋 Copy/paste these during interview (saves files to current directory):"
+echo "Challenge A: curl \"$SAMPLE_DATA_URL?file=challenge-a-migration.md\" -o challenge-a-migration.md"
+echo "Challenge B (C++/.NET): curl \"$SAMPLE_DATA_URL?file=challenge-b-debugging.md\" -o challenge-b-debugging.md"
+echo "Challenge B (Alternative): curl \"$SAMPLE_DATA_URL?file=challenge-b-alternative.md\" -o challenge-b-alternative.md"
+echo "Challenge C: curl \"$SAMPLE_DATA_URL?file=challenge-c-optimization.md\" -o challenge-c-optimization.md"
+echo "Rapid Fire: curl \"$SAMPLE_DATA_URL?file=rapid-fire-tasks.md\" -o rapid-fire-tasks.md"
 echo ""
 echo -e "${BLUE}💡 Next steps:${NC}"
 echo "1. Send email file to candidate:"

@@ -1,25 +1,59 @@
 // Lambda Handler (main.js)
 const { RequestProcessor } = require('./lib/request-processor');
 const { MetricsCollector } = require('./lib/metrics-collector');
-const { ValidationMiddleware } = require('./lib/validation-middleware');
+const { LegacyClient } = require('./lib/legacy-client');
+const { CacheManager } = require('./lib/cache-manager');
+const { DataEnricher } = require('./lib/data-enricher');
 
-// Singleton instances for performance
+// Memory leak: Singleton instances created but never disposed
 let processor = new RequestProcessor();
 let metrics = new MetricsCollector();
-let validator = new ValidationMiddleware();
+let legacyClient = new LegacyClient();
+let cacheManager = new CacheManager();
+let dataEnricher = new DataEnricher();
 
 exports.handler = async (event) => {
     const requestId = `req-${Date.now()}-${Math.random()}`;
 
     try {
+        // Memory leak: all modules used but never cleaned up
         metrics.startRequest(requestId, event);
-        const validatedData = await validator.validateRequest(event.arguments);
-        const result = await processor.processRequest(requestId, validatedData, event.requestContext);
+
+        // Simple validation without middleware
+        const requestData = event.arguments || event.body || {};
+        if (!requestData.studentId) {
+            throw new Error('studentId is required');
+        }
+
+        const result = await processor.processRequest(requestId, requestData, event.requestContext);
         metrics.recordSuccess(requestId, result);
-        return result;
+
+        return {
+            statusCode: 200,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify(result)
+        };
     } catch (error) {
         metrics.recordError(requestId, error);
         console.error('Request failed:', error);
-        throw error;
+
+        return {
+            statusCode: 500,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify({
+                error: error.message,
+                requestId: requestId,
+                timestamp: new Date().toISOString()
+            })
+        };
     }
+
+    // Memory leak: handler never calls cleanup methods
+    // Missing: processor.dispose(), metrics.cleanup(), etc.
 };

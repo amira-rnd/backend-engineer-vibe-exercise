@@ -22,8 +22,16 @@ Resources:
   # Challenge Files Storage
   ChallengeFilesBucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
     Properties:
-      BucketName: !Sub '${InterviewId}-challenge-files'
+      BucketName: !Sub '${AWS::AccountId}-challenges'
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteAllObjects
+            Status: Enabled
+            ExpirationInDays: 1
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -39,8 +47,16 @@ Resources:
   DeploymentBucket:
     Type: AWS::S3::Bucket
     Condition: CreateDeploymentBucket
+    DeletionPolicy: Delete
     Properties:
-      BucketName: !Sub '${InterviewId}-deployment'
+      BucketName: !Sub '${AWS::AccountId}-deployment'
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteAllObjects
+            Status: Enabled
+            ExpirationInDays: 1
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -56,7 +72,7 @@ Resources:
   StudentsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub '${InterviewId}-students'
+      TableName: interview-students
       AttributeDefinitions:
         - AttributeName: student_id
           AttributeType: S
@@ -82,7 +98,7 @@ Resources:
   AssessmentsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub '${InterviewId}-assessments'
+      TableName: interview-assessments
       AttributeDefinitions:
         - AttributeName: assessment_id
           AttributeType: S
@@ -106,7 +122,7 @@ Resources:
   ClassesTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub '${InterviewId}-classes'
+      TableName: interview-classes
       AttributeDefinitions:
         - AttributeName: class_id
           AttributeType: S
@@ -121,7 +137,7 @@ Resources:
   SchoolsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub '${InterviewId}-schools'
+      TableName: interview-schools
       AttributeDefinitions:
         - AttributeName: school_id
           AttributeType: S
@@ -137,7 +153,7 @@ Resources:
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub '${InterviewId}-lambda-role'
+      RoleName: interview-lambda-role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -176,7 +192,7 @@ Resources:
   BuggyLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub '${InterviewId}-buggy-api'
+      FunctionName: interview-buggy-api
       Runtime: nodejs18.x
       Handler: index.handler
       Role: !GetAtt LambdaExecutionRole.Arn
@@ -255,7 +271,7 @@ Resources:
   SampleDataFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub '${InterviewId}-sample-data-api'
+      FunctionName: interview-sample-data-api
       Runtime: nodejs18.x
       Handler: index.handler
       Role: !GetAtt LambdaExecutionRole.Arn
@@ -275,7 +291,7 @@ Resources:
   SampleDataApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
-      Name: !Sub '${InterviewId}-sample-data-api'
+      Name: interview-sample-data-api
       Description: Sample data API for interview candidates
 
   SampleDataApiResource:
@@ -354,8 +370,9 @@ Resources:
 
   DatabaseInstance:
     Type: AWS::RDS::DBInstance
+    DeletionPolicy: Delete
     Properties:
-      DBInstanceIdentifier: !Sub 'db-${InterviewId}-performance'
+      DBInstanceIdentifier: interview-db-performance
       DBInstanceClass: db.t3.micro
       Engine: postgres
       EngineVersion: '15.14'
@@ -387,6 +404,7 @@ Resources:
 
   CacheCluster:
     Type: AWS::ElastiCache::CacheCluster
+    DeletionPolicy: Delete
     Properties:
       CacheNodeType: cache.t3.micro
       Engine: redis
@@ -418,6 +436,7 @@ Resources:
 
   AttachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
+    DeletionPolicy: Delete
     Properties:
       VpcId: !Ref InterviewVPC
       InternetGatewayId: !Ref InternetGateway
@@ -629,15 +648,15 @@ Resources:
   CostAlertTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub '${InterviewId}-cost-alerts'
+      TopicName: interview-cost-alerts
       DisplayName: Interview Cost Alerts
 
   # Candidate IAM Role
   CandidateRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub '${InterviewId}-candidate-role'
-      MaxSessionDuration: 14400  # 4 hours
+      RoleName: interview-candidate-role
+      MaxSessionDuration: 43200  # 12 hours (AWS maximum)
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -682,7 +701,7 @@ Resources:
                   - logs:DescribeLogStreams
                   - logs:GetLogEvents
                   - logs:FilterLogEvents
-                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${InterviewId}-*'
+                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/interview-*'
               - Effect: Allow
                 Action:
                   - cloudwatch:GetMetricStatistics

@@ -83,26 +83,6 @@ Performance Metrics:
 - SQL connection pool exhaustion (max 100 connections)
 ```
 
-### Performance Bottlenecks (Red Herrings)
-
-```javascript
-// These look problematic but are NOT the memory leaks:
-
-// 1. Synchronous JSON.stringify in cache-manager.js (line 182)
-//    - Looks slow, but doesn't leak memory
-
-// 2. Multiple DynamoDB clients in request-processor.js (line 127)
-//    - Inefficient but AWS SDK handles cleanup
-
-// 3. Deep object spreading in data-enricher.js (line 402)
-//    - CPU intensive but temporary objects get GC'd
-
-// 4. Lack of connection pooling for DynamoDB
-//    - Performance issue but not a memory leak
-
-// 5. Recursive event emission in request-processor.js
-//    - Could cause stack overflow but stack memory is released
-```
 
 ```javascript
 // data-enricher.js
@@ -201,6 +181,13 @@ class ValidationMiddleware {
 module.exports = { ValidationMiddleware };
 ```
 
+### Accessing the Lambda Function
+
+**Lambda Function Name:** `interview-buggy-api`
+**CloudWatch Logs:** `/aws/lambda/interview-buggy-api`
+
+You can download the function code and update it after fixing the memory leak.
+
 ### Your Task
 
 1. **Identify ALL memory leak sources** (there are at least 6)
@@ -217,64 +204,3 @@ module.exports = { ValidationMiddleware };
 - Cold starts are not the issue
 - The problem only occurs under sustained load
 
-### Memory Leak Sources (For Interviewer Reference)
-
-1. **Connection Pool Map** (legacy-client.js:317) - Never cleaned, grows forever
-2. **Request Metrics Map** (metrics-collector.js:235) - Never cleaned up after recordSuccess
-3. **Connection Stats Array** (legacy-client.js:361) - Unbounded growth
-4. **Request Queue Array** (legacy-client.js:296) - Never cleaned
-5. **Event Listeners** (request-processor.js:71-73) - Added but never removed
-6. **Cache with no eviction** (cache-manager.js:191) - Unbounded cache growth
-7. **Circular References** (data-enricher.js:411) - enrichmentContext references itself
-8. **Validation History** (validation-middleware.js:449) - Unbounded array growth
-9. **Active Requests Map** (request-processor.js:122) - Cleanup commented out
-10. **Performance Metrics Array** (metrics-collector.js:233) - Grows forever
-
-### Evaluation Criteria
-
-**Excellent (5/5):**
-- Identifies 6+ memory leak sources across multiple modules
-- Recognizes the .NET connection pool as primary issue
-- Fixes event listener accumulation
-- Implements cache eviction strategies
-- Addresses circular reference patterns
-- Shows systematic debugging methodology
-- Uses AI strategically for syntax/implementation only
-
-**Good (4/5):**
-- Identifies 4-5 memory leak sources
-- Fixes connection pool cleanup
-- Addresses cache growth issues
-- Shows good debugging process
-- Some AI usage for research
-
-**Acceptable (3/5):**
-- Identifies 2-3 main issues
-- Recognizes memory growth problem
-- Basic fixes attempted
-- Shows some understanding of .NET interop
-
-### Hints (provide after 10 minutes)
-
-- "Look at what happens to Maps and Arrays across Lambda invocations"
-- "Check where event listeners are added vs removed"
-- "Consider cache eviction strategies"
-- "Think about circular references in the data structures"
-- "Examine the .NET connection lifecycle"
-
-### What NOT to Use AI For
-
-Candidates should demonstrate debugging methodology first:
-- ❌ "AI, find all the memory leaks in this code"
-- ❌ "AI, what's causing the SIGSEGV?"
-- ❌ "AI, fix the memory issues"
-- ✅ Identify patterns themselves, then ask for implementation help
-- ✅ Understand root causes before asking for syntax
-- ✅ Use AI for specific fixes after diagnosis
-
-### Discussion Questions
-
-1. How would you monitor this in production?
-2. What's the trade-off between singleton and creating new instances?
-3. How would you load test this fix?
-4. What other architectural patterns could prevent this?

@@ -136,7 +136,9 @@ Example Response:
                     'challenge-b-debugging.md',
                     'challenge-b-alternative.md',
                     'challenge-c-optimization.md',
-                    'rapid-fire-tasks.md'
+                    'rapid-fire-tasks.md',
+                    'legacy-students.csv',
+                    'legacy-assessments.csv'
                 ],
                 usage: 'Add ?file=filename to URL',
                 example: 'curl "$SAMPLE_DATA_URL?file=challenge-a-migration.md"'
@@ -181,7 +183,9 @@ Example Response:
                         'challenge-b-debugging.md',
                         'challenge-b-alternative.md',
                         'challenge-c-optimization.md',
-                        'rapid-fire-tasks.md'
+                        'rapid-fire-tasks.md',
+                        'legacy-students.csv',
+                        'legacy-assessments.csv'
                     ]),
                     note: 'Challenge files are served from S3. If missing, run: aws-setup/sync-challenges.sh <interview-id>'
                 })
