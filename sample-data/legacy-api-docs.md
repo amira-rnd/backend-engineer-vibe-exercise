@@ -28,30 +28,6 @@ SIGSEGV (Signal: Segmentation Violation)
 - Race condition in multi-threaded access
 ```
 
-#### Legacy API Connection Pattern
-
-```javascript
-// PROBLEMATIC PATTERN - DO NOT USE
-class LegacyApiClient {
-  constructor() {
-    this.connections = []; // Never cleaned!
-    this.dotNetFunction = edge.func({...});
-  }
-}
-
-// BETTER PATTERN
-class LegacyApiClient {
-  constructor() {
-    this.maxConnections = 10;
-    this.connectionPool = new ConnectionPool();
-  }
-  
-  async cleanup() {
-    await this.connectionPool.drain();
-  }
-}
-```
-
 ### GraphQL Resolver Best Practices
 
 - Always dispose of resources in finally blocks
