@@ -37,37 +37,7 @@ main.js                    # Lambda handler - entry point
 
 ## 🔍 Debugging Tips
 
-### Primary Memory Leak Categories to Investigate:
-
-1. **Connection Pool Issues**
-   - Database connections not closed
-   - Redis client accumulation
-   - .NET interop resource disposal
-
-2. **Cache Memory Leaks**
-   - Unbounded cache growth
-   - Missing TTL/eviction policies
-   - Double caching (memory + Redis)
-
-3. **Event Listener Accumulation**
-   - Process event listeners
-   - Connection event handlers
-   - Timer callbacks
-
-4. **Data Structure Growth**
-   - Maps and Arrays that never shrink
-   - Historical data accumulation
-   - Error context storage
-
-5. **Circular References**
-   - Object reference cycles
-   - Parent-child relationships
-   - Closure captures
-
-6. **Timer/Interval Leaks**
-   - Intervals not cleared
-   - Timers creating closures
-   - Recursive timer patterns
+When investigating memory leaks in production systems, focus on systematic analysis of resource lifecycle patterns and data structure management.
 
 ## 🎯 Success Criteria
 
@@ -103,18 +73,6 @@ node --inspect main.js
 3. **Map data flow** between modules
 4. **Identify resource acquisition points** and their cleanup pairs
 5. **Look for missing cleanup in error paths**
-
-## 🔧 Expected Fixes Categories
-
-You should find and fix issues in these areas:
-- [ ] Connection pooling and cleanup
-- [ ] Cache size management and eviction
-- [ ] Event listener management
-- [ ] Timer/interval cleanup
-- [ ] Data structure bounds checking
-- [ ] Circular reference breaking
-- [ ] .NET resource disposal
-- [ ] Error handling resource cleanup
 
 ## ⏱️ Time Management
 

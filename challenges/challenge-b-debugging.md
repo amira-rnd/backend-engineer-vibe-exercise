@@ -31,10 +31,10 @@ buggy-assessment-api/
 ├── main.js                    # Lambda handler entry point
 ├── lib/
 │   ├── request-processor.js   # Main processing logic
-│   ├── legacy-client.js       # .NET interop with memory leaks
-│   ├── cache-manager.js       # Unbounded cache issues
-│   ├── metrics-collector.js   # Growing collections
-│   └── data-enricher.js       # Circular references
+│   ├── legacy-client.js       # .NET/C++ interop layer
+│   ├── cache-manager.js       # In-memory caching
+│   ├── metrics-collector.js   # Performance tracking
+│   └── data-enricher.js       # Data transformation
 ├── package.json               # Project dependencies
 └── README.md                  # Problem description and symptoms
 ```
@@ -50,13 +50,6 @@ buggy-assessment-api/
 5. **Metrics Collection**: `lib/metrics-collector.js` - Performance tracking
 6. **Data Enrichment**: `lib/data-enricher.js` - Data transformation with context
 7. **Project Info**: `README.md` - Complete symptom description and error logs
-
-**Look for patterns like:**
-- Objects that grow without bounds
-- Event listeners that accumulate
-- Connection pools that never clean up
-- Circular references in data structures
-- Arrays/Maps that only grow, never shrink
 
 ### Error Symptoms
 
@@ -83,104 +76,6 @@ Performance Metrics:
 - SQL connection pool exhaustion (max 100 connections)
 ```
 
-
-```javascript
-// data-enricher.js
-class DataEnricher {
-    constructor() {
-        this.enrichmentCache = new Map();
-        this.activeEnrichments = [];
-    }
-
-    async enrichAssessments(assessments, studentData, requestId) {
-        const enrichmentContext = {
-            requestId,
-            startTime: Date.now(),
-            assessments: assessments,
-            studentData: studentData
-        };
-
-        this.activeEnrichments.push(enrichmentContext);
-
-        const enrichedData = assessments.map(assessment => {
-            const enriched = {
-                ...assessment,
-                studentGrade: studentData.grade,
-                readingLevel: studentData.readingLevel,
-                processedAt: new Date().toISOString(),
-                enrichmentId: `enrich-${Date.now()}-${Math.random()}`,
-                metadata: {
-                    requestId,
-                    processingTime: Date.now() - enrichmentContext.startTime,
-                    enrichmentContext // Circular reference!
-                }
-            };
-
-            // Cache enriched data
-            const cacheKey = `enriched-${assessment.id}-${requestId}`;
-            this.enrichmentCache.set(cacheKey, {
-                data: enriched,
-                context: enrichmentContext,
-                timestamp: Date.now()
-            });
-
-            return enriched;
-        });
-
-        // Note: activeEnrichments never cleaned up
-        return enrichedData;
-    }
-}
-
-module.exports = { DataEnricher };
-```
-
-```javascript
-// validation-middleware.js
-class ValidationMiddleware {
-    constructor() {
-        this.validationHistory = [];
-        this.ruleCache = new Map();
-    }
-
-    async validateRequest(args) {
-        const validationContext = {
-            timestamp: Date.now(),
-            args: args,
-            sessionId: Date.now()
-        };
-
-        this.validationHistory.push(validationContext);
-
-        // Cache validation rules
-        const rulesKey = `rules-${JSON.stringify(args)}`;
-        if (!this.ruleCache.has(rulesKey)) {
-            this.ruleCache.set(rulesKey, {
-                rules: this.generateValidationRules(args),
-                context: validationContext,
-                generated: Date.now()
-            });
-        }
-
-        return {
-            ...args,
-            validated: true,
-            validationId: validationContext.sessionId
-        };
-    }
-
-    generateValidationRules(args) {
-        return {
-            studentId: { required: true, type: 'string' },
-            assessmentType: { required: true, type: 'string' },
-            dateRange: { required: false, type: 'object' }
-        };
-    }
-}
-
-module.exports = { ValidationMiddleware };
-```
-
 ### Accessing the Lambda Function
 
 **Lambda Function Name:** `interview-buggy-api`
@@ -190,7 +85,7 @@ You can download the function code and update it after fixing the memory leak.
 
 ### Your Task
 
-1. **Identify ALL memory leak sources** (there are at least 6)
+1. **Identify ALL memory leak sources**
 2. **Fix the implementation**
 3. **Add proper cleanup and error handling**
 4. **Optimize for concurrent requests**
