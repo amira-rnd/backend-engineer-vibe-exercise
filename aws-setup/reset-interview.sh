@@ -61,7 +61,14 @@ OUTPUTS=$(aws cloudformation describe-stacks \
     --query 'Stacks[0].Outputs' \
     --output json)
 
-# Extract key values
+PARAMETERS=$(aws cloudformation describe-stacks \
+    --stack-name "$STACK_NAME" \
+    --profile personal \
+    --region "$REGION" \
+    --query 'Stacks[0].Parameters' \
+    --output json)
+
+# Extract key values from outputs
 STUDENTS_TABLE=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="StudentsTableName") | .OutputValue')
 ASSESSMENTS_TABLE=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="AssessmentsTableName") | .OutputValue')
 CLASSES_TABLE=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="ClassesTableName") | .OutputValue')
@@ -71,6 +78,10 @@ DB_PASSWORD=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="DatabasePasswor
 CACHE_ENDPOINT=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="CacheEndpoint") | .OutputValue')
 LAMBDA_ARN=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="BuggyLambdaArn") | .OutputValue')
 SAMPLE_API_URL=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="SampleDataApiUrl") | .OutputValue')
+
+# Extract deployment bucket and interview ID from parameters
+DEPLOYMENT_BUCKET=$(echo "$PARAMETERS" | jq -r '.[] | select(.ParameterKey=="DeploymentBucketName") | .ParameterValue')
+INTERVIEW_ID_FROM_STACK=$(echo "$PARAMETERS" | jq -r '.[] | select(.ParameterKey=="InterviewId") | .ParameterValue')
 
 echo "Students Table: $STUDENTS_TABLE"
 echo "Database: $DB_ENDPOINT"
@@ -260,81 +271,27 @@ else
     echo -e "${YELLOW}⚠️  DynamoDB population had issues${NC}"
 fi
 
-# 5. RESET LAMBDA FUNCTION CODE
-echo -e "${BLUE}⚡ Step 5: Resetting Lambda function to original buggy state...${NC}"
+# 5. RESET LAMBDA FUNCTION FROM S3 PACKAGE
+echo -e "${BLUE}⚡ Step 5: Resetting Lambda function from S3 package...${NC}"
+LAMBDA_NAME=$(echo "$LAMBDA_ARN" | cut -d':' -f7)
+S3_BUCKET="$DEPLOYMENT_BUCKET"
+S3_KEY="${INTERVIEW_ID_FROM_STACK}/buggy-lambda.zip"
 
-# Create the buggy Lambda code zip
-cat > /tmp/lambda_code.js << 'LAMBDA_EOF'
-// GraphQL API Lambda Function with Memory Leaks
-const AWS = require('aws-sdk');
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+echo "  Updating Lambda: $LAMBDA_NAME"
+echo "  From: s3://$S3_BUCKET/$S3_KEY"
 
-// Connection pool for reuse across requests (MEMORY LEAK: never cleaned up)
-const connections = [];
-let requestCache = new Map(); // MEMORY LEAK: grows indefinitely
-
-exports.handler = async (event) => {
-    try {
-        // Create connection for this request (MEMORY LEAK: connections accumulate)
-        const requestId = Date.now();
-        connections.push({
-            id: requestId,
-            client: new AWS.DynamoDB.DocumentClient(),
-            requestData: new Array(1000).fill(`request-${requestId}`)
-        });
-
-        // Cache request for performance (MEMORY LEAK: cache never cleaned)
-        const cacheKey = `query-${requestId}-${Math.random()}`;
-        requestCache.set(cacheKey, {
-            queryData: new Array(5000).fill(`cached-query-${requestId}`),
-            timestamp: Date.now()
-        });
-
-        console.log(`Active connections: ${connections.length}`);
-        console.log(`Cached queries: ${requestCache.size}`);
-
-        // Get student data
-        const result = await dynamodb.scan({
-            TableName: process.env.STUDENTS_TABLE,
-            Limit: 10
-        }).promise();
-
-        return {
-            statusCode: 200,
-            body: JSON.stringify({
-                message: 'Student data retrieved successfully',
-                activeConnections: connections.length,
-                cachedQueries: requestCache.size,
-                studentsFound: result.Items?.length || 0
-            })
-        };
-    } catch (error) {
-        console.error('Error processing request:', error);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ error: error.message })
-        };
-    }
-};
-LAMBDA_EOF
-
-# Create zip file
-cd /tmp
-zip -q lambda_code.zip lambda_code.js
-
-# Update Lambda function code
 aws lambda update-function-code \
-    --function-name "interview-buggy-api" \
-    --zip-file fileb://lambda_code.zip \
+    --function-name "$LAMBDA_NAME" \
+    --s3-bucket "$S3_BUCKET" \
+    --s3-key "$S3_KEY" \
     --profile personal \
-    --region "$REGION" >/dev/null
-
-rm lambda_code.js lambda_code.zip
+    --region "$REGION" \
+    --output json >/dev/null 2>&1
 
 if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Lambda function reset to buggy state${NC}"
+    echo -e "${GREEN}✅ Lambda function reset to original buggy state from S3${NC}"
 else
-    echo -e "${YELLOW}⚠️  Lambda reset had issues${NC}"
+    echo -e "${YELLOW}⚠️  Lambda update had issues (may still work)${NC}"
 fi
 
 # 6. CLEAR CLOUDWATCH LOGS

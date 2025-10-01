@@ -192,7 +192,7 @@ Hi $CANDIDATE_NAME,
 
 Here are your AWS credentials for the upcoming interview session. Please set these up now and test your access.
 
-⏰ **IMPORTANT**: These credentials are valid for 4 hours from generation time.
+⏰ **IMPORTANT**: These credentials are valid for 12 hours from generation time.
 🔄 **If expired**: Contact your interviewer for fresh credentials.
 
 === AWS SETUP INSTRUCTIONS ===
@@ -266,7 +266,7 @@ Note: Redis is available for Lambda functions but not directly accessible from y
 === TROUBLESHOOTING ===
 
 If credentials don't work:
-- Re-run the credential commands above (tokens expire after 4 hours)
+- Re-run the credential commands above (tokens expire after 12 hours)
 - Make sure you copied all credentials exactly as provided
 - Install AWS CLI if needed:
   * macOS: brew install awscli
