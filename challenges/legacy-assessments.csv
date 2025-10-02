@@ -39,3 +39,7 @@ AssessmentID,StudentID,AssessmentType,Score,DateTaken,TeacherNotes,ProcessingSta
 238,138,PROGRESS,67.3,2023-10-08 11:15:00,Needs fluency practice,PROCESSING
 239,139,BENCHMARK,89.9,2023-10-09 09:30:00,Excellent comprehension skills,COMPLETED
 240,140,DIBELS,72.8,2023-10-10 14:10:00,Good overall progress,
+241,103,PROGRESS,75.0,2023-08-10 09:00:00,Assessment predates student record,COMPLETED
+242,107,BENCHMARK,115.5,2023-10-11 10:00:00,Extra credit or data error?,COMPLETED
+243,124,PROGRESS,82.0,2023-10-12 11:00:00,Recent test for inactive student,COMPLETED
+244,111,DIBELS,-5.0,2023-10-13 09:00:00,Negative score entered,ERROR
