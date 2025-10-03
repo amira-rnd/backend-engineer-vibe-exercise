@@ -83,7 +83,9 @@ CREATE TABLE Assessments (
 }
 ```
 
-### Data Quality Issues to Handle
+### Known Data Quality Issues
+
+⚠️ **The product owner has identified the following data quality issues** that are expected in the legacy system. Your migration script should handle these gracefully:
 
 1. **Grade normalization**: Convert text grades ('Third') to numbers (3)
 2. **Reading levels**: Handle NULL and negative values (default to grade level - 0.5)
