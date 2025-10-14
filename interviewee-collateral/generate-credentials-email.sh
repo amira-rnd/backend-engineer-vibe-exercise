@@ -188,12 +188,10 @@ EMAIL_FILE="$SEND_DIR/candidate-credentials-${CANDIDATE_NAME}-${INTERVIEW_ID}.tx
 cat > "$EMAIL_FILE" << EOF
 Subject: Amira Learning - AWS Access Credentials
 
-Hi $CANDIDATE_NAME,
-
-Here are your AWS credentials for the upcoming interview session. Please set these up now and test your access.
+This file contains AWS credentials for the interview session. Please set these up now and test access before the interview.
 
 ⏰ **IMPORTANT**: These credentials are valid for 12 hours from generation time.
-🔄 **If expired**: Contact your interviewer for fresh credentials.
+🔄 **If expired**: Contact the interviewer for fresh credentials.
 
 === AWS SETUP INSTRUCTIONS ===
 
@@ -296,26 +294,9 @@ All challenge materials will be provided through the Sample Data API above durin
 
 === READY TO GO ===
 
-Once you can successfully run all the test commands above, you're ready for the interview!
+Once all test commands above run successfully, the environment is ready for the interview session.
 
-We'll start with a quick verification that everything works, then dive into the coding challenges.
-
-Good luck!
-
-Best regards,
-[Your Name]
-Amira Learning
-
----
-Generated: $(date)
-Interview Stack: $STACK_NAME
-
-=== PRE-VALIDATED CONNECTION TESTS ===
-
-These connections have been tested and verified by the interviewer:
-$(echo -e "$VALIDATION_REPORT")
-
-All systems are ready for your interview session!
+The interview will start with a quick verification that everything works, then proceed to the coding challenges.
 EOF
 
 echo -e "${GREEN}✅ Email generated: $EMAIL_FILE${NC}"
