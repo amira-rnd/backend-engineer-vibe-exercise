@@ -147,6 +147,8 @@ reset: ## ⚡ Quick reset environment without rebuilding infrastructure (1-2 min
 	@echo "⚡ This preserves infrastructure and only resets data (saves ~20 minutes)"
 	@echo ""
 	@cd aws-setup && ./reset-interview.sh $(CANDIDATE) $(INTERVIEW_ID)
+	@echo "📁 Re-uploading challenge files to S3..."
+	@cd aws-setup && ./sync-challenges.sh $(INTERVIEW_ID)
 	@echo ""
 	@echo "🚀 Environment reset complete! Ready for next interview session."
 
