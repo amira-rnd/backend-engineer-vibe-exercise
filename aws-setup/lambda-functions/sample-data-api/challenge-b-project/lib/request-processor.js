@@ -5,14 +5,13 @@ const { DataEnricher } = require('./data-enricher');
 
 class RequestProcessor {
     constructor() {
-        this.activeRequests = new Map(); // Memory leak: never cleaned up
-        this.requestHistory = []; // Memory leak: grows indefinitely
+        this.activeRequests = new Map();
+        this.requestHistory = [];
         this.eventListeners = [];
         this.cache = new CacheManager();
         this.legacyClient = new LegacyClient();
         this.enricher = new DataEnricher();
 
-        // Memory leak: event listeners accumulate on each instantiation
         process.on('beforeExit', (code) => {
             console.log('Process beforeExit event with code: ', code);
         });
@@ -23,7 +22,6 @@ class RequestProcessor {
     }
 
     async processRequest(requestId, data, context) {
-        // Memory leak: storing full request context without cleanup
         this.activeRequests.set(requestId, {
             data: data,
             context: context,
@@ -53,7 +51,6 @@ class RequestProcessor {
                 return this.performExpensiveCalculation(enrichedData, legacyResponse);
             });
 
-            // Memory leak: never remove from activeRequests
             // TODO: this.activeRequests.delete(requestId); // This line is commented out!
 
             return {
@@ -63,7 +60,6 @@ class RequestProcessor {
                 processedAt: new Date().toISOString()
             };
         } catch (error) {
-            // Memory leak: error objects accumulate with full stack traces
             this.requestHistory.push({
                 id: requestId,
                 error: error,
@@ -79,7 +75,6 @@ class RequestProcessor {
         // Simulate expensive IRT calculation with memory allocation
         const calculationBuffer = Buffer.alloc(2 * 1024 * 1024); // 2MB per calculation
 
-        // Memory leak: storing all calculation intermediate results
         if (!this.calculationCache) {
             this.calculationCache = new Map();
         }

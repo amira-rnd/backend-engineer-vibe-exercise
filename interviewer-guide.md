@@ -24,7 +24,9 @@ Evaluate the candidate's ability to:
 - [ ] Challenge files uploaded and accessible via Sample Data API
 - [ ] **Choose 2 main challenges based on candidate background**
 - [ ] Screen recording software ready (with consent)
-- [ ] **CRITICAL: Review comprehensive-scoring-rubric.md for AI usage evaluation**
+- [ ] **CRITICAL: Read INTERVIEWER-ADDENDUM-2026.md** — supersedes some rubric language for 2026 AI capabilities
+- [ ] **Read PROBING-QUESTION-BANK.md** — use 1 question per AI-generated block mid-challenge
+- [ ] Comprehensive-scoring-rubric.md open alongside addendum
 - [ ] Scoring rubric printed/open
 - [ ] **Set timers for each section**
 - [ ] **Verify infrastructure readiness (see Data Verification Checklist below)**

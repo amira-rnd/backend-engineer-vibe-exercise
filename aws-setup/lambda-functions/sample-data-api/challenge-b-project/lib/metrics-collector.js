@@ -4,12 +4,11 @@ const AWS = require('aws-sdk');
 class MetricsCollector {
     constructor() {
         this.cloudWatch = new AWS.CloudWatch({ region: 'us-east-1' });
-        this.localMetrics = new Map(); // Memory leak: metrics never purged
-        this.requestMetrics = []; // Memory leak: all request data stored forever
-        this.performanceData = new Map(); // Memory leak: performance samples accumulate
-        this.errorMetrics = []; // Memory leak: error history never cleaned
+        this.localMetrics = new Map();
+        this.requestMetrics = [];
+        this.performanceData = new Map();
+        this.errorMetrics = [];
 
-        // Memory leak: timers create closures over this instance
         this.metricsFlushTimer = setInterval(() => {
             this.flushMetricsToCloudWatch();
         }, 30000);
@@ -22,7 +21,6 @@ class MetricsCollector {
             this.collectDebugInfo();
         }, 15000);
 
-        // Memory leak: event listeners accumulate
         process.on('uncaughtException', (error) => {
             this.recordCriticalError('uncaught_exception', error);
         });
@@ -36,7 +34,6 @@ class MetricsCollector {
         const startTime = Date.now();
         const memUsage = process.memoryUsage();
 
-        // Memory leak: storing full request context with large buffers
         const requestMetric = {
             requestId: requestId,
             startTime: startTime,
@@ -54,7 +51,6 @@ class MetricsCollector {
             }
         };
 
-        // Memory leak: no cleanup of old requests
         this.localMetrics.set(requestId, requestMetric);
         this.requestMetrics.push(requestMetric);
 
@@ -63,7 +59,6 @@ class MetricsCollector {
     }
 
     startPerformanceTracking(requestId) {
-        // Memory leak: creating interval for each request without cleanup
         const perfInterval = setInterval(() => {
             const sample = {
                 timestamp: Date.now(),
@@ -75,7 +70,6 @@ class MetricsCollector {
                 v8Stats: v8.getHeapStatistics ? v8.getHeapStatistics() : {}
             };
 
-            // Memory leak: performance samples stored without bounds
             if (this.localMetrics.has(requestId)) {
                 this.localMetrics.get(requestId).samples.push(sample);
             }
@@ -88,7 +82,6 @@ class MetricsCollector {
 
         }, 1000);
 
-        // Memory leak: intervals stored but never cleared
         if (!this.activeIntervals) {
             this.activeIntervals = new Map();
         }
@@ -107,7 +100,6 @@ class MetricsCollector {
             metric.status = 'success';
             metric.completionTrace = new Error().stack; // Another stack trace
 
-            // Memory leak: success metrics stored indefinitely
             if (!this.successMetrics) {
                 this.successMetrics = [];
             }
@@ -123,14 +115,12 @@ class MetricsCollector {
         this.sendMetricToCloudWatch('RequestSuccess', 1, requestId);
         this.sendMetricToCloudWatch('RequestDuration', endTime - (this.localMetrics.get(requestId)?.startTime || endTime), requestId);
 
-        // Memory leak: performance tracking interval never stopped
         // clearInterval(this.activeIntervals.get(requestId)); // This line is commented out!
     }
 
     recordError(requestId, error) {
         const timestamp = Date.now();
 
-        // Memory leak: full error context stored with stack traces
         const errorMetric = {
             requestId: requestId,
             timestamp: timestamp,
@@ -151,7 +141,6 @@ class MetricsCollector {
             requestContext: this.localMetrics.get(requestId) // Full request context
         };
 
-        // Memory leak: errors accumulated without cleanup
         this.errorMetrics.push(errorMetric);
 
         if (this.localMetrics.has(requestId)) {
@@ -165,11 +154,9 @@ class MetricsCollector {
         this.sendMetricToCloudWatch('RequestError', 1, requestId);
         this.sendMetricToCloudWatch('ErrorRate', 1, requestId);
 
-        // Memory leak: error intervals also never cleared
     }
 
     recordCriticalError(type, errorData) {
-        // Memory leak: critical errors stored with full context
         if (!this.criticalErrors) {
             this.criticalErrors = [];
         }
@@ -194,7 +181,6 @@ class MetricsCollector {
     }
 
     captureHeapSnapshot() {
-        // Memory leak: heap snapshots stored in memory
         try {
             const v8 = require('v8');
             if (v8.writeHeapSnapshot) {
@@ -226,7 +212,6 @@ class MetricsCollector {
             performanceDataSize: this.performanceData.size
         };
 
-        // Memory leak: performance data accumulated without bounds
         if (!this.globalPerformanceHistory) {
             this.globalPerformanceHistory = [];
         }
@@ -247,7 +232,6 @@ class MetricsCollector {
             globalPerfHistorySize: this.globalPerformanceHistory ? this.globalPerformanceHistory.length : 0
         };
 
-        // Memory leak: debug info stored without cleanup
         if (!this.debugHistory) {
             this.debugHistory = [];
         }
@@ -285,7 +269,6 @@ class MetricsCollector {
         try {
             const metricData = [];
 
-            // Memory leak: creating metrics from stored data without cleanup
             for (const [requestId, metric] of this.localMetrics) {
                 if (metric.duration) {
                     metricData.push({
@@ -309,7 +292,6 @@ class MetricsCollector {
                 }).promise();
             }
 
-            // Memory leak: metrics sent to CloudWatch but never removed locally
             // this.localMetrics.clear(); // This line is commented out!
 
         } catch (error) {

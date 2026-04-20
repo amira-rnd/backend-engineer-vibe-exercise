@@ -149,38 +149,16 @@ async def process_request(request):
 
 **Looking for:** Custom metrics, proper units, error tracking
 
-## Task 5: Memory Leak Fix
+## ⭐ Task 5: AI Output Review (PRIORITIZE — strongest signal)
 **Time: 3 minutes**
 
-Find and fix the memory leak:
+See `challenges/rapid-fire-ai-review.md` for the full task and interviewer notes.
 
-**JavaScript Version:**
-```javascript
-const cache = {};
-app.get('/api/data/:id', async (req, res) => {
-    const { id } = req.params;
-    if (!cache[id]) {
-        cache[id] = await fetchLargeDataset(id);
-    }
-    res.json(cache[id]);
-});
-```
+**Summary:** Present a realistic-looking AI-generated migration script with 3 planted subtle bugs. Ask the candidate to review and decide whether to ship it.
 
-**Python Version:**
-```python
-from flask import Flask, request, jsonify
+**Prompt:** *"Claude produced this migration script in 30 seconds. Your teammate wants to run it against production. You have 3 minutes to review it. Find what's wrong."*
 
-app = Flask(__name__)
-cache = {}
-
-@app.route('/api/data/<id>')
-async def get_data(id):
-    if id not in cache:
-        cache[id] = await fetch_large_dataset(id)
-    return jsonify(cache[id])
-```
-
-**Looking for:** Unbounded cache, LRU implementation, TTL
+**Why this task:** Tests the core 2026 senior engineering skill — critically reviewing AI output under time pressure. See `INTERVIEWER-ADDENDUM-2026.md` for scoring guidance.
 
 ## Evaluation Notes
 - Speed and correctness balance
