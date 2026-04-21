@@ -38,7 +38,25 @@ Issues documented here are deferred from pre-interview fixes to avoid destabiliz
 
 ---
 
-## 4. `challenge-b-alternative.md` contains full buggy source inline
+## 5. `sync-challenges.sh` does not reliably upload `lib/*.js` to S3
+
+**Severity:** High — Challenge B is blocked if lib files aren't in S3
+
+**Detail:** The `sync-challenges.sh` script loops over `$PROJECT_DIR/lib/*.js` and uploads each to `s3://$BUCKET_NAME/lib/$filename`. In practice, this step fails silently (likely a path resolution issue when called via `make reset` from `aws-setup/` directory). The challenge bucket ends up missing all `lib/` objects.
+
+**Workaround (applied 2026-04-21):** Manually uploaded all 5 lib files directly:
+```bash
+aws s3 cp aws-setup/lambda-functions/sample-data-api/challenge-b-project/lib/cache-manager.js \
+  s3://455737799003-challenges/lib/cache-manager.js --profile personal --region us-east-1
+# (repeat for request-processor.js, legacy-client.js, data-enricher.js, metrics-collector.js)
+```
+Files will persist in S3 across `make reset` runs (sync overwrites, doesn't delete). But if files are ever deleted, re-run manually.
+
+**Proper fix (post-interview):** Debug path resolution in `sync-challenges.sh` lib upload loop, or add explicit `aws s3 sync` for the lib directory.
+
+---
+
+## 6. `challenge-b-alternative.md` contains full buggy source inline
 
 **Severity:** High for signal quality — now addressed by stripping `// Memory leak:` comments from the deployed Lambda source
 

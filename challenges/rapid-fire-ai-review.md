@@ -100,8 +100,7 @@ async function migrateAssessments(idMap) {
         type: ASSESSMENT_TYPE_MAP[row.Type] || row.Type,
         score: score < 0 ? null : score,
         dateTaken,
-        windowTag: deriveWindowTag(dateTaken),
-        gradeLevel: parseInt(row.GradeLevel)
+        windowTag: deriveWindowTag(dateTaken)
       };
     });
 
@@ -158,8 +157,15 @@ Ship it? Fix it? Block it? What specifically needs to change?
 3. Questions the DIBELS mapping ("I'd want to verify this mapping before shipping — DIBELS doesn't sound like progress monitoring")
 4. Either ships with explicit fixlist or blocks + articulates risk
 
+**Bonus Bug 4 — `row.Type` instead of `row.AssessmentType`** *(unplanted, bonus signal)*
+- The CSV column header is `AssessmentType`, not `Type`. `row.Type` is `undefined` for every row, so all migrated assessments get `type: undefined`. The DIBELS mapping bug (Bug 3) never actually fires at runtime because the lookup key is always `undefined`.
+- A candidate who opens the CSV and cross-references column names catches this. A candidate who only reads the script misses it.
+- Do NOT reveal this during the task. If the candidate finds it, ask: "How would you have caught this before it hit production?" (Code review? Schema validation? Test coverage?)
+- Score it as a bonus above 5/5 signal — a candidate who finds 4 bugs in 3 minutes is exceptional.
+
 **Scoring (relative to AI Proficiency axis):**
-- All 3 found + explained → 5/5 on this task
+- All 3 planted bugs found + explained → 5/5 on this task
+- 2 planted + Bonus Bug 4 found → 5/5 with a note
 - 2 found, 1 questioned → 4/5
 - 1 found reliably + right category of skepticism → 3/5
 - Ships it → 1/5 (regardless of other scores, note this as a concern)
