@@ -77,18 +77,21 @@ sudo apt install postgresql-client
    - Quick environment setup
    - Brief discussion about your AI tool workflow
 
-2. **Main Challenges (30 min)**
-   - 2 real-world backend challenges (15 minutes each)
-   - Data migration, debugging, and/or optimization
-   - Challenges will be presented during the session
+2. **Challenge A: Data Migration (~22 min)**
+   - One real-world backend challenge: migrate legacy SQL data to DynamoDB
+   - Includes intentional data quality issues you'll need to identify and handle
+   - Challenge will be provided during the session via the Sample Data API
 
-3. **Rapid Fire Tasks (5-10 min)**
-   - 2-3 quick challenges if time permits
-   - Tests adaptability and context switching
+3. **AI Output Review (~3 min)**
+   - You'll review a short AI-generated script and give your assessment
+   - Tests whether you validate AI output before shipping it
 
-4. **Wrap-up (5 min)**
-   - Brief discussion of your solutions
-   - Questions about your approach
+4. **Optional Quick Task (~3 min, if time permits)**
+   - A focused DynamoDB bug fix if we have time
+
+5. **Wrap-up & Discussion (remaining time)**
+   - Discussion of your approach and decisions
+   - Questions about your AI tool workflow
 
 ### What We're Evaluating
 
@@ -102,12 +105,12 @@ sudo apt install postgresql-client
 
 ✅ **DO:**
 - Start coding quickly - analysis paralysis is your enemy
-- Use AI aggressively for boilerplate and syntax
+- Use AI aggressively — for implementation, not just boilerplate
 - Think out loud - we want to understand your process
 - Make pragmatic trade-offs and explain them
 - Focus on working solutions over perfect ones
 - Ask for clarification if requirements are unclear
-- Demonstrate your problem-solving methodology first, then implement
+- Own every business decision and validate every AI output
 
 ❌ **DON'T:**
 - Spend too long reading requirements
