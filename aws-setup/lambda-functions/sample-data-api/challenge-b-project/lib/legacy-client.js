@@ -3,18 +3,16 @@ const edge = require('edge-js');
 
 class LegacyClient {
     constructor() {
-        this.connections = new Map(); // Memory leak: connections never closed
-        this.connectionPool = []; // Memory leak: pool grows without bounds
+        this.connections = new Map();
+        this.connectionPool = [];
         this.activeConnections = new Set();
 
-        // Memory leak: creating new .NET AppDomain per instance without disposal
         this.dotnetAssembly = edge.func({
             assemblyFile: '/opt/AmiraAssessment.dll', // Simulated path
             typeName: 'AmiraAssessment.LegacyDataService',
             methodName: 'ProcessStudentData'
         });
 
-        // Memory leak: timer creates closure over this instance
         this.connectionCleanupTimer = setInterval(() => {
             // This cleanup never actually happens properly
             console.log(`Active connections: ${this.activeConnections.size}`);
@@ -26,11 +24,9 @@ class LegacyClient {
         const connectionId = `conn-${studentId}-${Date.now()}`;
 
         try {
-            // Memory leak: creating new connection without reusing pool
             const connection = await this.createConnection(connectionId);
             this.activeConnections.add(connection);
 
-            // Memory leak: storing connection reference without cleanup
             this.connections.set(connectionId, {
                 connection: connection,
                 studentId: studentId,
@@ -49,16 +45,13 @@ class LegacyClient {
             // Call .NET component - potential managed/unmanaged memory leak
             const legacyResult = await this.callDotNetService(studentId, connection);
 
-            // Memory leak: keeping failed connections in pool
             this.connectionPool.push(connection);
 
             return legacyResult;
 
         } catch (error) {
-            // Memory leak: error connections are never cleaned up
             console.error(`Legacy client error for student ${studentId}:`, error);
 
-            // Memory leak: storing error context with full connection data
             if (!this.errorHistory) {
                 this.errorHistory = [];
             }
@@ -87,21 +80,19 @@ class LegacyClient {
             },
             sqlConnection: {
                 handle: `handle-${connectionId}`,
-                preparedStatements: new Map(), // Memory leak: statements never cleared
-                transactionLog: [], // Memory leak: grows indefinitely
-                resultSetCache: new Map() // Memory leak: cached results never evicted
+                preparedStatements: new Map(),
+                transactionLog: [],
+                resultSetCache: new Map()
             },
             createdAt: Date.now()
         };
 
-        // Memory leak: event listeners on connection objects
         connection.socket.onError = (error) => {
             console.error('Socket error:', error);
             // Error stored but connection never cleaned up
         };
 
         connection.socket.onData = (data) => {
-            // Memory leak: storing all received data
             if (!connection.receivedData) {
                 connection.receivedData = [];
             }
@@ -117,13 +108,11 @@ class LegacyClient {
 
     async callDotNetService(studentId, connection) {
         try {
-            // Memory leak: .NET interop without proper disposal
             const result = await new Promise((resolve, reject) => {
                 // Simulate .NET call with unmanaged memory allocation
                 const unmanagedBuffer = Buffer.alloc(2 * 1024 * 1024); // 2MB unmanaged
 
                 setTimeout(() => {
-                    // Memory leak: unmanaged buffer never freed
                     resolve({
                         studentData: {
                             id: studentId,
@@ -141,7 +130,6 @@ class LegacyClient {
                 }, 100);
             });
 
-            // Memory leak: storing .NET call history
             if (!this.dotnetCallHistory) {
                 this.dotnetCallHistory = [];
             }
@@ -154,7 +142,6 @@ class LegacyClient {
 
             return result;
         } catch (error) {
-            // Memory leak: .NET exception context stored without cleanup
             if (!this.dotnetErrors) {
                 this.dotnetErrors = [];
             }

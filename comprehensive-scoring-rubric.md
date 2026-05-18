@@ -1,6 +1,8 @@
 # Comprehensive Scoring Rubric - Vibe Coding Exercise (60-Minute Version)
 ## Senior Backend Engineer - AI Usage & Technical Evaluation
 
+> ⚠️ **2026 Update:** `INTERVIEWER-ADDENDUM-2026.md` supersedes some language in this rubric — particularly around AI usage expectations and candidate profiles. Read the addendum first; use this rubric for detailed scoring criteria.
+
 ### 🎯 Core Principle: AI Should Amplify, Not Replace, Critical Thinking
 ### ⏰ Note: Adjusted expectations for 60-minute format
 

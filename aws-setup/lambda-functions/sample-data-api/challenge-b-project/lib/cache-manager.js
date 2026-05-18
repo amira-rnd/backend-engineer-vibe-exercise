@@ -3,15 +3,13 @@ const redis = require('redis');
 
 class CacheManager {
     constructor() {
-        this.inMemoryCache = new Map(); // Memory leak: no eviction policy
+        this.inMemoryCache = new Map();
         this.cacheStats = new Map();
-        this.accessHistory = []; // Memory leak: grows indefinitely
-        this.redisClients = []; // Memory leak: client connections accumulate
+        this.accessHistory = [];
+        this.redisClients = [];
 
-        // Memory leak: creating new Redis client on every instantiation
         this.createRedisClient();
 
-        // Memory leak: timer references prevent garbage collection
         this.statsInterval = setInterval(() => {
             this.recordStats();
         }, 10000);
@@ -23,7 +21,6 @@ class CacheManager {
     }
 
     createRedisClient() {
-        // Memory leak: new client created without closing old ones
         const client = redis.createClient({
             host: 'ami-ca-6qxxskrr2ci1.v5zc3n.0001.use1.cache.amazonaws.com',
             port: 6379,
@@ -31,7 +28,6 @@ class CacheManager {
             enableOfflineQueue: false
         });
 
-        // Memory leak: event listeners accumulate with each client
         client.on('error', (error) => {
             console.error('Redis client error:', error);
             // Error stored but client never cleaned up
@@ -54,7 +50,6 @@ class CacheManager {
             console.log('Redis client ready');
         });
 
-        // Memory leak: storing all clients instead of reusing
         this.redisClients.push(client);
         this.currentClient = client;
 
@@ -69,7 +64,6 @@ class CacheManager {
             if (this.inMemoryCache.has(key)) {
                 const cached = this.inMemoryCache.get(key);
 
-                // Memory leak: storing access patterns without bounds
                 this.accessHistory.push({
                     key: key,
                     type: 'memory_hit',
@@ -78,7 +72,6 @@ class CacheManager {
                     accessCount: (cached.accessCount || 0) + 1
                 });
 
-                // Memory leak: updating access count without cleanup
                 cached.accessCount = (cached.accessCount || 0) + 1;
                 cached.lastAccessed = Date.now();
 
@@ -88,7 +81,6 @@ class CacheManager {
             // Check Redis cache
             const redisValue = await this.getFromRedis(key);
             if (redisValue) {
-                // Memory leak: storing Redis results in memory cache without eviction
                 this.inMemoryCache.set(key, {
                     value: redisValue,
                     timestamp: Date.now(),
@@ -111,7 +103,6 @@ class CacheManager {
             // Generate new value
             const newValue = await valueGenerator();
 
-            // Memory leak: storing generated values without size limits
             const cacheEntry = {
                 value: newValue,
                 timestamp: Date.now(),
@@ -127,13 +118,11 @@ class CacheManager {
                 }
             };
 
-            // Memory leak: no size checking before adding to cache
             this.inMemoryCache.set(key, cacheEntry);
 
             // Store in Redis (but keep local copy too - double memory usage)
             await this.setInRedis(key, newValue, ttl);
 
-            // Memory leak: access history grows without bounds
             this.accessHistory.push({
                 key: key,
                 type: 'cache_miss',
@@ -146,7 +135,6 @@ class CacheManager {
             return newValue;
 
         } catch (error) {
-            // Memory leak: error context stored with full cache state
             if (!this.cacheErrors) {
                 this.cacheErrors = [];
             }
@@ -167,7 +155,6 @@ class CacheManager {
 
     async getFromRedis(key) {
         try {
-            // Memory leak: creating new client for each operation
             if (!this.currentClient || !this.currentClient.connected) {
                 this.currentClient = this.createRedisClient();
             }
@@ -202,7 +189,6 @@ class CacheManager {
             errorCount: this.cacheErrors ? this.cacheErrors.length : 0
         };
 
-        // Memory leak: stats accumulate without cleanup
         this.cacheStats.set(Date.now(), stats);
     }
 
@@ -210,7 +196,6 @@ class CacheManager {
         // This method pretends to clean up but doesn't actually do anything
         console.log(`Cache cleanup: ${this.inMemoryCache.size} entries`);
 
-        // Memory leak: fake cleanup that doesn't remove anything
         const fakeCleanupLog = {
             timestamp: Date.now(),
             beforeSize: this.inMemoryCache.size,

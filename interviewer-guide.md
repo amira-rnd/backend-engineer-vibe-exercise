@@ -22,9 +22,11 @@ Evaluate the candidate's ability to:
 - [ ] **⭐ COPY the challenge URLs displayed at the end of `make credentials` - you'll need these during interview**
 - [ ] Candidate received prep materials 24 hours ago (via `make prep-email`)
 - [ ] Challenge files uploaded and accessible via Sample Data API
-- [ ] **Choose 2 main challenges based on candidate background**
+- [ ] **Challenge A is always the main challenge** — Task 5 (AI review) follows; Task 2 is optional
 - [ ] Screen recording software ready (with consent)
-- [ ] **CRITICAL: Review comprehensive-scoring-rubric.md for AI usage evaluation**
+- [ ] **CRITICAL: Read INTERVIEWER-ADDENDUM-2026.md** — supersedes some rubric language for 2026 AI capabilities
+- [ ] **Read PROBING-QUESTION-BANK.md** — use 1 question per AI-generated block mid-challenge
+- [ ] Comprehensive-scoring-rubric.md open alongside addendum
 - [ ] Scoring rubric printed/open
 - [ ] **Set timers for each section**
 - [ ] **Verify infrastructure readiness (see Data Verification Checklist below)**
@@ -294,27 +296,31 @@ Focus on the biggest performance wins first.
 2. What monitoring would you add for production?
 3. How would you handle this at scale (millions of students)?
 
-## Part 3: Rapid Fire Challenges (5-10 minutes)
+## Part 3: Rapid Fire Tasks
 
-**Present Challenges via:**
-- **RECOMMENDED:** Copy/paste the Rapid Fire curl command from `make credentials` output
-- **Alternative:** Screen share challenges/ directory if API is unavailable
-- **Backup:** Copy/paste individual tasks into chat during interview
+> **2026 format:** Task 5 (AI Output Review) is mandatory. Task 2 (BatchGetItem) is optional if time permits. The remaining tasks below are backup — use only if Challenge A finished early and Task 5/2 are both done.
 
-### If time permits, present 2-3 quick tasks:
+---
 
-#### **⭐ Task 1: Lambda Rate Limiting (2 min)** - PRIORITIZE
-Add rate limiting (100 req/min per user) to this Lambda:
-```javascript
-exports.handler = async (event) => {
-    const { userId, action } = event;
-    // Add rate limiting here
-    return { statusCode: 200, body: 'Success' };
-};
-```
+### ⭐ Task 5: AI Output Review (3 min) — ALWAYS RUN
 
-#### **Task 2: Fix BatchGetItem Bug (3 min)**
-This code misses items. Fix it:
+Present the AI-generated migration script from `challenges/rapid-fire-ai-review.md` (via curl or screen share). Ask the candidate to review it and tell you what they'd change before shipping.
+
+**3 planted bugs:**
+1. `BATCH_SIZE = 26` — violates DynamoDB's 25-item batch write limit (silent data loss)
+2. `UnprocessedItems` not checked — dropped items on throttle are silently ignored
+3. `DIBELS` mapped to `PROGRESS_MONITORING` — correct value is `BENCHMARK`
+
+**Scoring signal:**
+- Catches all 3 → strong AI output validation skills
+- Catches 1-2 → acceptable; probe what they'd normally review
+- Catches 0 → red flag; they'd ship broken AI code
+
+---
+
+### ⚡ Task 2: Fix BatchGetItem Bug (3 min) — Optional
+
+Run only if time permits after Task 5. This code silently drops items when DynamoDB throttles:
 ```javascript
 async function getBatch(ids) {
     const params = {
@@ -330,8 +336,23 @@ async function getBatch(ids) {
     return result.Responses.Students;
 }
 ```
+**Fix:** Loop on `result.UnprocessedKeys` until empty.
 
-#### **Task 3: Convert Recursive CTE (3 min)**
+---
+
+### Backup Tasks (rarely needed)
+
+#### Task 1: Lambda Rate Limiting (2 min)
+Add rate limiting (100 req/min per user) to this Lambda:
+```javascript
+exports.handler = async (event) => {
+    const { userId, action } = event;
+    // Add rate limiting here
+    return { statusCode: 200, body: 'Success' };
+};
+```
+
+#### Task 3: Convert Recursive CTE (3 min)
 Convert this SQL to application code:
 ```sql
 WITH RECURSIVE subordinates AS (
@@ -345,7 +366,7 @@ WITH RECURSIVE subordinates AS (
 SELECT * FROM subordinates;
 ```
 
-#### **Task 4: Add Monitoring (2 min)**
+#### Task 4: Add Monitoring (2 min)
 Add CloudWatch metrics to track API latency, error rate, DynamoDB throttling:
 ```javascript
 async function processRequest(request) {
@@ -353,19 +374,6 @@ async function processRequest(request) {
     const result = await complexOperation(request);
     return result;
 }
-```
-
-#### **Task 5: Memory Leak Fix (3 min)**
-Find and fix the memory leak:
-```javascript
-const cache = {};
-app.get('/api/data/:id', async (req, res) => {
-    const { id } = req.params;
-    if (!cache[id]) {
-        cache[id] = await fetchLargeDataset(id);
-    }
-    res.json(cache[id]);
-});
 ```
 
 **Focus on:** Speed, pattern recognition, and efficient context switching

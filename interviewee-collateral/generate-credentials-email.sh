@@ -236,9 +236,9 @@ Sample Data & Schema API: $SAMPLE_DATA_URL
 - Available files: schemas.sql, test-data.json, legacy-api-docs.md, challenge files
 
 Database Connection:
-- Host: interview-db-performance.[region].rds.amazonaws.com
+- Host: $DB_ENDPOINT
 - User: postgres
-- Password: [generated password]
+- Password: $DB_PASSWORD
 - Database: postgres
 
 Redis Cache: $REDIS_ENDPOINT (VPC-internal only, accessible from Lambda functions)
@@ -283,12 +283,12 @@ If database connection fails:
 === INTERVIEW CHALLENGES ===
 
 Challenges will be presented during the interview session. They test agentic AI-powered development - your ability to work strategically with AI tools:
-- 2-3 main challenges (15 minutes each)
-- 5 rapid fire tasks (2-3 minutes each, if time permits)
+- 1 main challenge (~20 minutes) — data migration
+- Rapid fire tasks (3-5 minutes each, if time permits)
 
-Focus areas: Data migration, debugging, optimization, and adaptability
+Focus areas: Data quality judgment, migration implementation, and AI output review
 
-Expected approach: Use AI for boilerplate/syntax, but demonstrate your problem-solving methodology.
+Expected approach: Use AI aggressively for implementation, but own every business decision and validate every output.
 
 All challenge materials will be provided through the Sample Data API above during the interview.
 

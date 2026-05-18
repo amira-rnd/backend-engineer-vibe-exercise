@@ -31,7 +31,7 @@ make cleanup CANDIDATE=jane-smith      # Delete all AWS resources
 
 ### **What Gets Automatically Created:**
 - ☁️ **AWS Infrastructure**: DynamoDB, Lambda, RDS PostgreSQL, Redis
-- 🔐 **Temporary AWS credentials** (4-hour expiration)
+- 🔐 **Temporary AWS credentials** (12-hour expiration)
 - 📧 **Complete email** with setup instructions
 - 📦 **Challenge package** with source code and docs
 - 🐛 **Sample data with intentional bugs** for debugging challenges
@@ -43,11 +43,10 @@ make cleanup CANDIDATE=jane-smith      # Delete all AWS resources
 | Time | Activity | Priority | Focus |
 |------|----------|----------|-------|
 | 0-5 min | Setup & Introduction | ⭐ Required | AWS access verification |
-| 5-20 min | Challenge A: Migration | ⭐ PRIORITIZE | AI prompting, data quality |
-| 20-35 min | Challenge B: Debugging | ⭐ PRIORITIZE | Memory leak analysis |
-| 35-50 min | Challenge C: Performance | ⚡ If moving fast | Query optimization |
-| 50-55 min | Discussion | ⭐ Required | Architecture decisions |
-| 55-60 min | Wrap-up | ⭐ Required | AI tool reflection |
+| 5-27 min | Challenge A: Migration | ⭐ Required | Data quality judgment, AI implementation |
+| 27-30 min | Task 5: AI Output Review | ⭐ Required | Spotting planted bugs in AI-generated code |
+| 30-33 min | Task 2: BatchGetItem Bug | ⚡ If time permits | DynamoDB UnprocessedItems handling |
+| 33-60 min | Wrap-up & Probing | ⭐ Required | AI tool reflection, candidate profiling |
 
 ## 🎯 Interview Focus: Agentic AI Development
 
@@ -77,10 +76,10 @@ backend-engineer-vibe-exercise/
 ├── .gitignore                      # Prevents committing generated files
 │
 ├── challenges/                     # 📚 Challenge files for candidates
-│   ├── challenge-a-migration.md    # ⭐ Legacy data migration (15 min)
-│   ├── challenge-b-debugging.md    # ⭐ C++/.NET memory leak (15 min)
-│   ├── challenge-b-alternative.md  # ⭐ Node.js memory leak (15 min)
-│   ├── challenge-c-optimization.md # ⚡ Performance optimization (15 min)
+│   ├── challenge-a-migration.md    # ⭐ Legacy data migration (22 min)
+│   ├── challenge-b-debugging.md    # ⭐ C++/.NET memory leak (optional)
+│   ├── challenge-b-alternative.md  # ⭐ Node.js memory leak (optional)
+│   ├── challenge-c-optimization.md # ⚡ Performance optimization (optional)
 │   └── rapid-fire-tasks.md         # ⚡ Quick adaptation tasks (5-10 min)
 │
 ├── interviewer-guide.md            # 📋 Complete interviewer reference + solutions
@@ -105,43 +104,33 @@ backend-engineer-vibe-exercise/
 
 ## 🎯 Challenge Overview
 
-### **⭐ Main Challenges (Choose 2 of 3)**
-
-### **Challenge A: Legacy Data Migration (15 min)**
-Transform legacy SQL data to DynamoDB, handling data quality issues.
-- **Skills**: Data transformation, error handling, batch processing
+### **⭐ Challenge A: Legacy Data Migration (22 min) — Always Run**
+Transform legacy SQL data to DynamoDB, handling real data quality issues.
+- **Skills**: Data quality judgment, transformation logic, batch processing, error handling
 - **AWS**: DynamoDB, PostgreSQL with intentional data problems
+- **Key signal**: Do they find the traps, or do they blindly migrate bad data?
 
-### **Challenge B: Memory Leak Debugging (15 min)**
-**Choose based on candidate background:**
-- **Option 1**: C++/.NET Lambda memory leak (advanced)
-- **Option 2**: Node.js service memory leak (standard)
-- **Skills**: Debugging methodology, resource management, performance analysis
-- **AWS**: Lambda function with subtle memory leaks, CloudWatch logs
+### **⭐ Task 5: AI Output Review (3 min) — Always Run**
+Candidate reviews an AI-generated migration script with 3 planted bugs.
+- **Bugs**: BATCH_SIZE=26 (violates DynamoDB 25-item limit), UnprocessedItems not checked, DIBELS mapped to PROGRESS_MONITORING instead of BENCHMARK
+- **Key signal**: Do they catch the bugs, or do they ship the AI output uncritically?
 
-### **Challenge C: Performance Optimization (15 min)**
-**For very senior candidates or fast movers**
-- Optimize slow database queries and application logic
-- **Skills**: Query optimization, caching strategies, algorithmic thinking
-- **AWS**: PostgreSQL, Redis cache, complex data hierarchies
+### **⚡ Task 2: BatchGetItem Bug (3 min) — Optional**
+Fix a DynamoDB BatchGetItem that silently drops items (UnprocessedItems not retried).
+- **Run if**: Time permits after Task 5 and candidate is moving well
 
-### **⚡ Rapid Fire Tasks (5-10 min total)**
-**5 quick tasks testing adaptability and context switching:**
-1. **Rate Limiting** (2 min) - Add Lambda rate limiting
-2. **BatchGetItem Bug** (3 min) - Fix missing items issue
-3. **Recursive CTE** (3 min) - Convert SQL to application code
-4. **Monitoring** (2 min) - Add CloudWatch metrics
-5. **Memory Leak** (3 min) - Fix unbounded cache growth
-
-**Focus**: Speed, pattern recognition, efficient AI usage under pressure
+### **Backup Challenges (rarely used)**
+- **Challenge B**: Memory leak debugging (C++/.NET or Node.js)
+- **Challenge C**: Performance optimization (PostgreSQL + Redis)
+- **Other rapid fire**: Rate Limiting, Recursive CTE, Monitoring
 
 ---
 
 ## 💡 Interviewer Tips
 
 ### **🎯 60-Minute Prioritization:**
-- **MUST DO**: Setup (5) + Challenge A (15) + Challenge B (15) + Discussion (10) + Wrap-up (5) = 50 min
-- **IF TIME**: Challenge C (15 min) or Rapid Fire Tasks (5-10 min)
+- **MUST DO**: Setup (5) + Challenge A (22) + Task 5 AI Review (3) + Wrap-up (rest) = 60 min
+- **IF TIME**: Task 2 BatchGetItem bug (3 min) before wrap-up
 
 ### **⚡ Quick Reset Between Interviews:**
 For multiple interviews in one day, use `make reset CANDIDATE=next-name` instead of full rebuild:

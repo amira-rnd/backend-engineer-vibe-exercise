@@ -3,13 +3,12 @@ const { Client } = require('pg');
 
 class DataEnricher {
     constructor() {
-        this.enrichmentCache = new Map(); // Memory leak: no size limits or TTL
-        this.processingHistory = []; // Memory leak: all processing history stored
-        this.dbConnections = new Set(); // Memory leak: connections never closed
-        this.enrichmentRules = new Map(); // Memory leak: rules accumulate
-        this.studentDataCache = new Map(); // Memory leak: student data cached forever
+        this.enrichmentCache = new Map();
+        this.processingHistory = [];
+        this.dbConnections = new Set();
+        this.enrichmentRules = new Map();
+        this.studentDataCache = new Map();
 
-        // Memory leak: recursive interval creates closure
         this.cacheRefreshTimer = setInterval(() => {
             this.refreshEnrichmentCache();
         }, 120000); // 2 minutes
@@ -27,7 +26,6 @@ class DataEnricher {
         const startTime = Date.now();
 
         try {
-            // Memory leak: storing all processing attempts
             const processingRecord = {
                 id: processingId,
                 startTime: startTime,
@@ -68,7 +66,6 @@ class DataEnricher {
                 processingDuration: Date.now() - startTime
             };
 
-            // Memory leak: caching result without eviction policy
             this.enrichmentCache.set(`${data.studentId}-${data.assessmentType}`, {
                 result: finalResult,
                 timestamp: Date.now(),
@@ -84,7 +81,6 @@ class DataEnricher {
             return finalResult;
 
         } catch (error) {
-            // Memory leak: error processing stored with full context
             const errorRecord = {
                 processingId: processingId,
                 error: error,
@@ -105,7 +101,6 @@ class DataEnricher {
     }
 
     async getStudentContext(studentId, processingRecord) {
-        // Memory leak: creating new DB connection for each call
         const dbClient = new Client({
             host: 'interview-db-performance.cqos9cbaa6iv.us-east-1.rds.amazonaws.com',
             port: 5432,
@@ -117,7 +112,7 @@ class DataEnricher {
 
         try {
             await dbClient.connect();
-            this.dbConnections.add(dbClient); // Memory leak: connections stored but never closed
+            this.dbConnections.add(dbClient);
 
             processingRecord.enrichmentSteps.push({
                 step: 'getStudentContext',
@@ -169,7 +164,6 @@ class DataEnricher {
                 }
             };
 
-            // Memory leak: student data cached without size limits or TTL
             this.studentDataCache.set(cacheKey, {
                 data: contextData,
                 timestamp: Date.now(),
@@ -186,7 +180,6 @@ class DataEnricher {
                 cacheSize: this.studentDataCache.size
             });
 
-            // Memory leak: DB connection never closed
             // await dbClient.end(); // This line is commented out!
 
             return contextData;
@@ -194,7 +187,6 @@ class DataEnricher {
         } catch (error) {
             console.error('Error getting student context:', error);
 
-            // Memory leak: failed connections stored
             if (!this.failedConnections) {
                 this.failedConnections = [];
             }
@@ -213,7 +205,6 @@ class DataEnricher {
     async applyEnrichmentRules(data, studentContext, processingRecord) {
         const enriched = { ...data };
 
-        // Memory leak: enrichment rules accumulate without cleanup
         for (const [ruleId, rule] of this.enrichmentRules) {
             try {
                 const ruleStartTime = Date.now();
@@ -221,7 +212,6 @@ class DataEnricher {
                 // Apply rule
                 const ruleResult = await this.executeEnrichmentRule(rule, enriched, studentContext);
 
-                // Memory leak: storing all rule execution results
                 const ruleExecution = {
                     ruleId: ruleId,
                     startTime: ruleStartTime,
@@ -252,7 +242,6 @@ class DataEnricher {
             } catch (error) {
                 console.error(`Error applying enrichment rule ${ruleId}:`, error);
 
-                // Memory leak: rule errors stored with full context
                 if (!this.ruleErrors) {
                     this.ruleErrors = [];
                 }
@@ -294,7 +283,6 @@ class DataEnricher {
     }
 
     normalizeReadingLevel(readingLevel) {
-        // Memory leak: normalization cache grows without bounds
         if (!this.normalizationCache) {
             this.normalizationCache = new Map();
         }
@@ -333,7 +321,6 @@ class DataEnricher {
     }
 
     async predictPerformance(data, context) {
-        // Memory leak: prediction models and intermediate calculations stored
         if (!this.predictionCache) {
             this.predictionCache = new Map();
         }
@@ -382,7 +369,6 @@ class DataEnricher {
             }
         };
 
-        // Memory leak: risk assessments stored indefinitely
         if (!this.riskAssessmentHistory) {
             this.riskAssessmentHistory = [];
         }
@@ -397,7 +383,6 @@ class DataEnricher {
     }
 
     async performHistoricalAnalysis(studentId, enrichedData, processingRecord) {
-        // Memory leak: historical analysis results cached forever
         const cacheKey = `historical-${studentId}`;
 
         if (this.enrichmentCache.has(cacheKey)) {
@@ -432,7 +417,6 @@ class DataEnricher {
             timestamp: Date.now()
         };
 
-        // Memory leak: analysis cached without cleanup
         this.enrichmentCache.set(cacheKey, {
             result: analysis,
             timestamp: Date.now(),
@@ -472,7 +456,6 @@ class DataEnricher {
             timestamp: Date.now()
         };
 
-        // Memory leak: predictive results stored indefinitely
         if (!this.predictiveResults) {
             this.predictiveResults = [];
         }
@@ -497,7 +480,6 @@ class DataEnricher {
     }
 
     loadEnrichmentRules() {
-        // Memory leak: rules loaded but never unloaded
         const rules = [
             { id: 'reading_level_norm', type: 'reading_level_normalization', enabled: true, priority: 1 },
             { id: 'grade_consistency', type: 'grade_consistency_check', enabled: true, priority: 2 },
@@ -516,7 +498,6 @@ class DataEnricher {
     }
 
     refreshEnrichmentCache() {
-        // Memory leak: cache refresh creates more data instead of cleaning
         console.log(`Refreshing enrichment cache: ${this.enrichmentCache.size} entries`);
 
         // Fake refresh that doesn't actually clean anything
@@ -526,7 +507,6 @@ class DataEnricher {
             // Missing: actual cache cleanup logic
         }
 
-        // Memory leak: refresh history stored
         if (!this.refreshHistory) {
             this.refreshHistory = [];
         }
@@ -538,7 +518,6 @@ class DataEnricher {
     }
 
     performFakeHistoryCleanup() {
-        // Memory leak: fake cleanup that doesn't remove anything
         console.log(`History cleanup: ${this.processingHistory.length} processing records`);
 
         const fakeCleanupResult = {
